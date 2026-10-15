@@ -28,3 +28,6 @@ node_modules/
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Private requirements notes (kept locally, not published)
+需求-方案.md
