@@ -1,0 +1,30 @@
+# Build output (make build / make es-client)
+/bin/
+*.exe
+*.test
+*.out
+coverage.*
+
+# Local config (config.sample.yaml is the tracked template)
+config.yaml
+config.local.yaml
+
+# Runtime data, if XMON_HOME points inside the repo
+.xmon/
+*.db
+*.db-shm
+*.db-wal
+*.log
+
+# Node (scripts/ui_smoke.mjs)
+node_modules/
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
+
+# Claude Code local settings
+.claude/settings.local.json

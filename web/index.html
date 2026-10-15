@@ -1,0 +1,1412 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="brand">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>X-Monitor</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%230e1116%27/%3E%3Cpath d=%27M9 9l14 14M23 9L9 23%27 stroke=%27%234c8dff%27 stroke-width=%275%27 stroke-linecap=%27round%27/%3E%3C/svg%3E">
+<script>try{var th=localStorage.getItem("xmon.theme");if(th&&/^[a-z]+$/.test(th))document.documentElement.dataset.theme=th;var f=localStorage.getItem("xmon.fontsize");if(f&&/^1[2-8]$/.test(f))document.documentElement.style.setProperty("--app-font-size",f+"px")}catch(e){}</script>
+<style>
+  /* Tokens first. The default is "brand" (CC-Monitor's standard palette); every other
+     theme redefines the same names, so no component below names a colour literally.
+     --cat-1..8 is the categorical series order (identity, never rank); the light set is
+     for light surfaces and the dark set for dark ones, each run through the dataviz
+     validator against the surfaces it is used on (Nord's mid-tone panel only gets WARN on
+     contrast, which the labelled bars and tables make up for). */
+  :root{
+    --bg:#f4f0f1; --panel:#f9f5e6; --panel2:#ffffff; --border:#c1d3da; --fg:#201f3a; --muted:#6b6f8a;
+    --accent:#4757e8; --on-accent:#ffffff; --high:#ec5615; --on-high:#1b1a33; --medium:#ff9d43; --low:#10c378;
+    --critical:#eb9dff; --info:var(--muted);
+    --cat-1:#2F86C8; --cat-2:#E45C36; --cat-3:#0F9488; --cat-4:#7C5FD0; --cat-5:#A87B10; --cat-6:#D4508B;
+    --allow:var(--low); --block:var(--high); --confirm:var(--medium);
+    --shadow:rgba(32,31,58,.18); --scrim:rgba(32,31,58,.45);
+    color-scheme:light;
+  }
+  :root[data-theme="light"]{
+    --bg:#f5f6f8; --panel:#ffffff; --panel2:#eef0f4; --border:#d8dce4; --fg:#1c2029; --muted:#6b7280;
+    --accent:#2f6fed; --on-accent:#ffffff; --high:#d6304a; --on-high:#ffffff; --medium:#b3790a; --low:#1f8f5f; --critical:#9333c6;
+  }
+  :root[data-theme="dark"],:root[data-theme="dracula"],:root[data-theme="nord"],:root[data-theme="midnight"],
+  :root[data-theme="ocean"],:root[data-theme="forest"],:root[data-theme="sunset"],:root[data-theme="rose"]{
+    --cat-1:#3E8FD4; --cat-2:#E7643D; --cat-3:#17A392; --cat-4:#8265E0; --cat-5:#B88E22; --cat-6:#DC5A91;
+    --shadow:rgba(0,0,0,.5); --scrim:rgba(0,0,0,.6); color-scheme:dark;
+  }
+  :root[data-theme="dark"]{--bg:#0f1115;--panel:#151822;--panel2:#1c202c;--border:#262b3a;--fg:#d8dce6;--muted:#7a8094;--accent:#4f8cff;--on-accent:#07101f;--high:#ff5f6d;--on-high:#2a0409;--medium:#e6b450;--low:#4fd18b;--critical:#c792ea}
+  :root[data-theme="dracula"]{--bg:#191a21;--panel:#21222c;--panel2:#2b2d3a;--border:#3c3f52;--fg:#f8f8f2;--muted:#9a9cb0;--accent:#bd93f9;--on-accent:#1a1b26;--high:#ff5555;--on-high:#2a0409;--medium:#f1fa8c;--low:#50fa7b;--critical:#ff79c6}
+  :root[data-theme="nord"]{--bg:#2e3440;--panel:#3b4252;--panel2:#434c5e;--border:#4c566a;--fg:#eceff4;--muted:#9aa5b8;--accent:#88c0d0;--on-accent:#1c2430;--high:#bf616a;--on-high:#ffffff;--medium:#ebcb8b;--low:#a3be8c;--critical:#b48ead}
+  :root[data-theme="midnight"]{--bg:#07080f;--panel:#0d1117;--panel2:#111827;--border:#1e2a3a;--fg:#f1f5f9;--muted:#64748b;--accent:#6366f1;--on-accent:#ffffff;--high:#f87171;--on-high:#2a0409;--medium:#f59e0b;--low:#10b981;--critical:#a78bfa}
+  :root[data-theme="ocean"]{--bg:#060d14;--panel:#091825;--panel2:#0d2035;--border:#163550;--fg:#e0f2fe;--muted:#4a7a9b;--accent:#0ea5e9;--on-accent:#031420;--high:#f87171;--on-high:#2a0409;--medium:#f59e0b;--low:#10b981;--critical:#a78bfa}
+  :root[data-theme="forest"]{--bg:#030b05;--panel:#071a0a;--panel2:#0c2412;--border:#183d20;--fg:#dcfce7;--muted:#4a7a5a;--accent:#22c55e;--on-accent:#03140a;--high:#f87171;--on-high:#2a0409;--medium:#f59e0b;--low:#10b981;--critical:#a78bfa}
+  :root[data-theme="sunset"]{--bg:#0d0804;--panel:#1a1208;--panel2:#231a0d;--border:#3d2e18;--fg:#fff7ed;--muted:#7a5a3a;--accent:#f97316;--on-accent:#1c0d02;--high:#ef4444;--on-high:#ffffff;--medium:#fbbf24;--low:#10b981;--critical:#f472b6}
+  :root[data-theme="rose"]{--bg:#0d0610;--panel:#160b1e;--panel2:#200f2c;--border:#3a1f4a;--fg:#fdf4ff;--muted:#7a4a7a;--accent:#ec4899;--on-accent:#1f0a18;--high:#f87171;--on-high:#2a0409;--medium:#f59e0b;--low:#10b981;--critical:#a855f7}
+  /* interface font and size (Appearance dialog); html carries the size so every rem follows it */
+  :root{--app-font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;--app-font-size:14px}
+  html{font-size:var(--app-font-size)}
+  button,input,select,textarea{font-family:inherit}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:1rem/1.5 var(--app-font)}
+  header{display:flex;align-items:center;gap:16px;padding:12px 20px;background:var(--panel);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10;flex-wrap:wrap}
+  header h1{font-size:1.1429rem;margin:0;font-weight:600;letter-spacing:.3px}
+  header h1 .dot{color:var(--accent)}
+  .pill{font-size:0.8571rem;padding:2px 10px;border-radius:999px;background:var(--panel2);border:1px solid var(--border);color:var(--muted)}
+  .pill.on{color:color-mix(in srgb,var(--low) 55%,var(--fg));border-color:var(--low)}
+  .grow{flex:1}
+  nav{display:flex;gap:4px}
+  nav button{background:transparent;border:1px solid transparent;color:var(--muted);padding:6px 12px;border-radius:8px;cursor:pointer;font-size:0.9286rem}
+  nav button.active{background:var(--panel2);color:var(--fg);border-color:var(--border)}
+  main{padding:20px;max-width:1200px;margin:0 auto}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px}
+  .card .n{font-size:2rem;font-weight:700}
+  .card .l{color:var(--muted);font-size:0.8571rem;margin-top:4px}
+  table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--border);font-size:0.9286rem;vertical-align:top}
+  th{color:var(--muted);font-weight:500;background:var(--panel2)}
+  tr:last-child td{border-bottom:none}
+  td.mono,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:0.8571rem;word-break:break-all}
+  .badge{display:inline-block;padding:1px 8px;border-radius:6px;font-size:0.7857rem;font-weight:600}
+  /* tinted fill + text pulled toward the ink colour, so the badge reads on every theme's surface */
+  .r-info{background:color-mix(in srgb,var(--info) 16%,var(--panel));color:var(--muted)}
+  .r-low{background:color-mix(in srgb,var(--low) 18%,var(--panel));color:color-mix(in srgb,var(--low) 55%,var(--fg))}
+  .r-medium{background:color-mix(in srgb,var(--medium) 20%,var(--panel));color:color-mix(in srgb,var(--medium) 55%,var(--fg))}
+  .r-high{background:color-mix(in srgb,var(--high) 18%,var(--panel));color:color-mix(in srgb,var(--high) 60%,var(--fg))}
+  .r-critical{background:color-mix(in srgb,var(--critical) 22%,var(--panel));color:color-mix(in srgb,var(--critical) 60%,var(--fg))}
+  .d-allow{color:color-mix(in srgb,var(--allow) 55%,var(--fg))} .d-block{color:color-mix(in srgb,var(--block) 60%,var(--fg));font-weight:600} .d-confirm{color:color-mix(in srgb,var(--confirm) 55%,var(--fg))}
+  .layer{font-size:0.7143rem;color:var(--muted);border:1px solid var(--border);border-radius:4px;padding:0 4px}
+  .btn{background:var(--accent);color:var(--on-accent);border:none;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:0.9286rem}
+  .btn.ghost{background:var(--panel2);color:var(--fg);border:1px solid var(--border)}
+  .btn.danger{background:var(--block);color:var(--on-high)}
+  .approval{background:var(--panel);border:1px solid var(--medium);border-radius:12px;padding:16px;margin-bottom:12px}
+  .approval .cmd{background:var(--bg);border-radius:8px;padding:10px;margin:8px 0}
+  .approval .actions{display:flex;gap:8px;margin-top:8px}
+  .empty{color:var(--muted);text-align:center;padding:40px}
+  .reason{color:var(--muted);font-size:0.8571rem}
+  select,input{background:var(--panel2);color:var(--fg);border:1px solid var(--border);border-radius:8px;padding:5px 8px}
+  a{color:var(--accent)}
+
+  .cards5{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-bottom:14px}
+  .cards6{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:12px}
+  #secCards{grid-template-columns:repeat(5,1fr)}
+  @media(max-width:1000px){#secCards{grid-template-columns:repeat(auto-fill,minmax(165px,1fr))}}
+  .card.click{cursor:pointer}.card.click:hover{border-color:var(--accent)}
+  .card .sub{color:var(--muted);font-size:0.8571rem;margin-top:6px}
+  .card .n{font-variant-numeric:tabular-nums}.card .n.dim{color:var(--muted)}
+  .card .sub .chip{margin-right:6px}
+  .chip{display:inline-flex;align-items:center;gap:4px;font-size:0.7857rem;font-weight:600;line-height:1.5;padding:0 8px;border-radius:999px;white-space:nowrap;
+    background:color-mix(in srgb,var(--c,var(--muted)) 16%,var(--panel));color:color-mix(in srgb,var(--c,var(--muted)) 55%,var(--fg))}
+  .chip.ok{--c:var(--low)}.chip.warn{--c:var(--medium)}.chip.bad{--c:var(--high)}.chip.mute{--c:var(--muted)}
+  .card .n.txt{font-size:1.5714rem;line-height:1.35}
+  .lrow{display:flex;align-items:flex-start;gap:8px;font-size:0.8571rem;margin:4px 0;line-height:1.4}
+  .ldot{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--muted);flex:none;margin-top:4px}
+  .ldot.ok{background:var(--low)}.ldot.off{background:var(--muted);opacity:.5}.ldot.bad{background:var(--high)}
+  .modebar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px 14px}
+  .seg{display:inline-flex;border:1px solid var(--border);border-radius:999px;overflow:hidden}
+  .seg button{background:transparent;border:0;color:var(--muted);padding:5px 14px;cursor:pointer;font-size:0.9286rem}
+  .seg button.on{background:var(--accent);color:var(--on-accent)}
+  .sec{display:flex;align-items:center;gap:10px;margin:24px 0 10px;color:var(--muted);font-size:0.9286rem;font-weight:600}
+  .sec::after{content:"";flex:1;height:1px;background:var(--border)}
+  .sec .sec-note{font-weight:400;font-size:0.8571rem;order:3;max-width:60%}
+  .sec select{order:2}
+  .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+  .panel h4{margin:0 0 10px;font-size:0.8571rem;color:var(--muted);font-weight:600}
+  .brow{display:grid;grid-template-columns:minmax(90px,150px) 1fr 56px;gap:8px;align-items:center;font-size:0.8571rem;margin:7px 0}
+  .brow .bl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .brow.click{cursor:pointer;border-radius:6px;margin-left:-6px;margin-right:-6px;padding:0 6px}
+  .brow.click:hover{background:var(--panel2)}.brow.click:hover .bl{color:var(--accent)}
+  .btrack{background:var(--panel2);border-radius:999px;height:8px;overflow:hidden}
+  .bfill{height:100%;border-radius:999px;min-width:2px}
+  .bnum{text-align:right;font-variant-numeric:tabular-nums}
+  .trend{position:relative}
+  .tr-plot{position:relative;height:140px;margin-left:34px}
+  .tr-grid{position:absolute;left:0;right:0;border-top:1px solid var(--border)}
+  .tr-grid span{position:absolute;left:-34px;top:-8px;width:28px;text-align:right;color:var(--muted);font-size:0.7857rem;font-variant-numeric:tabular-nums}
+  .tr-cols{position:absolute;inset:0;display:flex;align-items:flex-end;gap:2px}
+  .tr-col{flex:1;height:100%;display:flex;align-items:flex-end;justify-content:center;position:relative;min-width:0}
+  .tr-bar{width:100%;max-width:24px;position:relative;border-radius:4px 4px 0 0;background:color-mix(in srgb,var(--accent) 55%,var(--panel))}
+  .tr-bar i{position:absolute;left:0;right:0;bottom:0;background:var(--block);border-radius:4px 4px 0 0}
+  .tr-col:hover::before{content:"";position:absolute;inset:0;background:color-mix(in srgb,var(--fg) 6%,transparent)}
+  .trend .axis{display:flex;justify-content:space-between;color:var(--muted);font-size:0.7857rem;margin:6px 0 0 34px}
+  .legend{display:flex;gap:14px;color:var(--muted);font-size:0.8571rem;margin-top:8px}
+  .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+  .modal{position:fixed;inset:0;background:var(--scrim);display:flex;align-items:flex-start;justify-content:center;padding:6vh 16px;z-index:50;overflow:auto}
+  .modal[hidden]{display:none}
+  .modal-box{background:var(--panel);border:1px solid var(--border);border-radius:14px;width:min(900px,100%);padding:16px 18px}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .evl{border:1px solid var(--border);border-radius:10px;padding:9px 12px;margin-bottom:8px;background:var(--panel2)}
+  .evl-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:0.8571rem}
+  .evl-c{margin-top:5px;font-size:0.8571rem}
+
+  .det{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+  .dcard{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+  .dcard.unmanaged{border-color:color-mix(in srgb,var(--medium) 55%,var(--border))}
+  .dhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .dhead b{font-size:1.0714rem}.dhead .grow{flex:1}
+  .dmeta{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .dline{font-size:0.8571rem;color:var(--muted)}
+  .dact{display:flex;gap:8px;align-items:center;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;min-width:0}
+  .dact code{flex:1;min-width:0;font:.8571rem ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere}
+  .dact button{flex:none;font-size:0.8571rem;padding:3px 10px}
+  .dev{background:none;border:0;padding:0;color:var(--accent);cursor:pointer;font:inherit;text-decoration:underline;text-underline-offset:2px}
+  /* heartbeat: heart colour and ECG amplitude follow how recently the agent did something */
+  .vital{display:inline-flex;align-items:center;gap:5px;vertical-align:middle;--vital-color:var(--muted)}
+  .vital-heart{width:18px;height:18px;flex:none;color:var(--vital-color);transform-origin:center}
+  .vital-ecg{width:48px;height:18px;flex:none;overflow:visible}
+  .vital-ecg path{stroke:var(--vital-color);transform:scaleY(calc(.25 + var(--vital-heat,0)*.75));transform-origin:center;transform-box:fill-box}
+  .vital.vital-flat .vital-ecg path{transform:none}
+  .vital.vital-animated .vital-heart{animation:vital-beat 1.15s ease-in-out infinite}
+  .vital.vital-animated .vital-ecg path{stroke-dasharray:6 4;animation:vital-scroll .85s linear infinite}
+  @keyframes vital-beat{0%,100%{transform:scale(1)}15%{transform:scale(1.3)}30%{transform:scale(1)}45%{transform:scale(1.15)}60%{transform:scale(1)}}
+  @keyframes vital-scroll{to{stroke-dashoffset:-20}}
+  @media (prefers-reduced-motion:reduce){.vital.vital-animated .vital-heart,.vital.vital-animated .vital-ecg path{animation:none}}
+  .vital-badge{float:right}
+  .stcell{display:flex;align-items:center;gap:8px;white-space:nowrap}
+  tr.rowclick{cursor:pointer}tr.rowclick:hover td{background:color-mix(in srgb,var(--accent) 7%,var(--panel))}
+  tr.dead td{color:var(--muted)}
+  .field{margin-bottom:16px}
+  .field>span{display:block;font-size:.8571rem;color:var(--muted);margin-bottom:6px}
+  .field select{width:100%;padding:7px 10px}
+  .field input[type=range]{width:100%;accent-color:var(--accent);padding:0}
+  .theme-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+  .theme-swatch{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:.8571rem;color:var(--fg);cursor:pointer}
+  .theme-swatch:hover{border-color:var(--accent)}
+  .theme-swatch.active{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);font-weight:600}
+  .theme-swatch .swatch-dot{width:12px;height:12px;border-radius:50%;flex:none;box-shadow:0 0 0 1px var(--border)}
+  .font-preview{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;line-height:1.6}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+  .switch{display:inline-flex;align-items:center;gap:7px;font-size:.8571rem;color:var(--muted);cursor:pointer;user-select:none}
+  .switch input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+  .switch .track{position:relative;flex:none;width:32px;height:18px;border-radius:999px;background:var(--border);transition:background .15s}
+  .switch .thumb{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.4);transition:transform .15s}
+  .switch input:checked+.track{background:var(--accent)}
+  .switch input:checked+.track .thumb{transform:translateX(14px)}
+  .switch input:focus-visible+.track{outline:2px solid var(--accent);outline-offset:2px}
+  .newbadge{background:var(--accent);color:var(--on-accent);border:0;border-radius:999px;padding:2px 12px;font-size:.8571rem;cursor:pointer}
+  .card.click:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .quota-row{display:grid;grid-template-columns:minmax(140px,220px) 1fr minmax(120px,200px);gap:12px;align-items:center;margin:10px 0}
+  .quota-row .qn{font-size:1.4286rem;font-weight:700;font-variant-numeric:tabular-nums}
+  .qtrack{background:var(--panel2);border:1px solid var(--border);border-radius:999px;height:12px;overflow:hidden;display:flex}
+  .qfill{height:100%;min-width:2px}
+  .qfill+.qfill{margin-left:2px}
+  .qmeta{font-size:.8571rem;color:var(--muted)}
+  @media(max-width:700px){.quota-row{grid-template-columns:1fr}}
+  .kv{display:flex;gap:16px;flex-wrap:wrap;margin:6px 0 0}
+  .kv span{font-size:.8571rem;color:var(--muted)}.kv b{color:var(--fg);font-weight:600}
+  .notice{border:1px solid var(--border);background:var(--panel2);border-radius:10px;padding:12px 14px;font-size:.9286rem}
+  .notice pre{margin:8px 0 0;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font:.8571rem ui-monospace,Menlo,monospace;overflow:auto}
+  .board{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+  .bcard{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;cursor:pointer;min-width:0}
+  .bcard:hover{border-color:var(--accent)}
+  .bcard.dead{opacity:.7}
+  .bhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .bhead b{font-size:1.0714rem}.bhead .grow{flex:1}
+  .bcwd{font:.8571rem ui-monospace,Menlo,monospace;overflow-wrap:anywhere;color:var(--muted)}
+  .bstats{display:flex;gap:16px;flex-wrap:wrap;font-size:.8571rem;color:var(--muted)}
+  .bstats b{color:var(--fg);font-variant-numeric:tabular-nums}
+  table.plain{width:100%}
+  .tlbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+  #tlWrap{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:8px;overflow:hidden}
+  #tlWrap[hidden]{display:none}
+  #tlCanvas{display:block;width:100%}
+  .tt{position:fixed;z-index:60;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:0.8571rem;max-width:270px;pointer-events:none;box-shadow:0 6px 20px var(--shadow)}
+  .tt[hidden]{display:none}.tt-title{font-weight:600;margin-bottom:2px}
+  #flowBox{height:min(70vh,640px);border:1px solid var(--border);border-radius:12px}
+  .tlnote{color:var(--muted);font-size:0.8571rem}
+  .langbtn{background:var(--panel2);color:var(--fg);border:1px solid var(--border);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:0.8571rem}
+  .langbtn:hover{border-color:var(--accent)}
+  .banner{background:color-mix(in srgb,var(--high) 16%,var(--panel));border-bottom:1px solid var(--high);padding:10px 20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:0.9286rem}
+  .banner[hidden]{display:none}
+  .banner input{min-width:260px}
+  .rid{color:var(--muted);font-size:0.7857rem}
+  .evtitle{color:var(--fg);font-size:0.8571rem;margin-bottom:2px}
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="dot">●</span> X-Monitor</h1>
+  <span class="pill" id="modePill">—</span>
+  <span class="pill" id="glmPill">GLM —</span>
+  <span class="pill" id="rulesPill">—</span>
+  <span class="grow"></span>
+  <nav id="nav">
+    <button data-tab="overview" class="active" data-i18n="tab.overview">总览</button>
+    <button data-tab="approvals"><span data-i18n="tab.approvals">审批台</span> <span id="apBadge"></span></button>
+    <button data-tab="events" data-i18n="tab.events">事件</button>
+    <button data-tab="timeline" data-i18n="tab.timeline">操作时间线</button>
+    <button data-tab="sessions" data-i18n="tab.sessions">会话</button>
+    <button data-tab="status" data-i18n="tab.status">状态</button>
+    <button data-tab="coverage" data-i18n="tab.coverage">覆盖能力</button>
+  </nav>
+  <button class="langbtn" id="settingsBtn" type="button" data-i18n-attr="title:settings.btnTitle,aria-label:settings.title">⚙</button>
+  <button class="langbtn" id="langBtn" type="button" data-i18n-attr="title:lang.title">中 / EN</button>
+</header>
+<div id="authBanner" class="banner" hidden>
+  <b data-i18n="auth.title">未授权</b>
+  <span data-i18n="auth.body">缺少或错误的访问令牌。在终端运行 xmon ui 获取带令牌的完整地址，或在此粘贴令牌：</span>
+  <input id="tokenInput" type="password" autocomplete="off" data-i18n-attr="placeholder:auth.placeholder">
+  <button class="btn" id="tokenBtn" type="button" data-i18n="auth.button">使用令牌</button>
+</div>
+<div id="netBanner" class="banner" hidden data-i18n="net.down">无法连接到 xmond 守护进程，请确认它正在运行（xmon status）。</div>
+<main>
+  <section id="tab-overview">
+    <div class="cards5" id="topCards"></div>
+    <div class="modebar" id="modeBar"></div>
+
+    <div class="sec"><span data-i18n="det.title">检测到的 AI</span><span class="sec-note" data-i18n="det.note"></span></div>
+    <div class="det" id="detCards"></div>
+
+    <div class="sec"><span data-i18n="ov.sec.security">安全</span>
+      <span class="sec-note" data-i18n="ov.sec.securityNote"></span>
+      <select id="rangeSel">
+        <option value="1h" data-i18n="ov.range.1h">最近 1 小时</option>
+        <option value="6h" data-i18n="ov.range.6h">最近 6 小时</option>
+        <option value="24h" data-i18n="ov.range.24h" selected>最近 24 小时</option>
+        <option value="7d" data-i18n="ov.range.7d">最近 7 天</option>
+      </select></div>
+    <div class="cards6" id="secCards"></div>
+
+    <div class="sec" data-i18n="ov.sec.activity">活动</div>
+    <div class="cards6" id="actCards"></div>
+
+    <div class="sec" data-i18n="ov.sec.tools">工具调用</div>
+    <div class="cards6" id="toolCards"></div>
+
+    <div class="sec" data-i18n="ov.sec.trend">趋势</div>
+    <div class="panel trend" id="trend"></div>
+
+    <div class="sec" data-i18n="ov.sec.dist">分布</div>
+    <div class="grid3" id="distPanels"></div>
+  </section>
+
+  <section id="tab-approvals" hidden>
+    <div id="approvals"></div>
+  </section>
+
+  <section id="tab-events" hidden>
+    <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center">
+      <label><span data-i18n="ev.riskge">风险≥</span> <select id="riskFilter">
+        <option value="" data-i18n="ev.all">全部</option><option value="low" data-risk="low">low</option>
+        <option value="medium" data-risk="medium">medium</option><option value="high" data-risk="high">high</option>
+        <option value="critical" data-risk="critical">critical</option></select></label>
+      <span class="reason" data-i18n="ev.live">实时推送</span>
+      <label class="switch"><input type="checkbox" id="evAutoScroll" checked><span class="track"><span class="thumb"></span></span><span data-i18n="logs.autoScroll">自动滚动到最新</span></label>
+      <button class="newbadge" id="evNew" type="button" hidden></button>
+    </div>
+    <table><thead><tr><th data-i18n="th.time">时间</th><th data-i18n="th.layer">层</th><th data-i18n="th.type">类型</th><th>Agent</th><th data-i18n="th.decision">决策</th><th data-i18n="th.risk">风险</th><th data-i18n="th.rule">规则</th><th data-i18n="th.detail">详情</th></tr></thead>
+    <tbody id="eventsBody"></tbody></table>
+  </section>
+
+  <section id="tab-timeline" hidden>
+    <div class="tlbar">
+      <b data-i18n="tlv.title">会话操作时间线</b>
+      <select id="tlRange">
+        <option value="60" data-i18n="ov.range.1h">最近 1 小时</option>
+        <option value="360" data-i18n="ov.range.6h">最近 6 小时</option>
+        <option value="1440" data-i18n="ov.range.24h" selected>最近 24 小时</option>
+        <option value="10080" data-i18n="ov.range.7d">最近 7 天</option>
+      </select>
+      <span class="tlnote" id="tlAxis"></span>
+    </div>
+    <div class="tlnote" data-i18n="tlv.hint" style="margin-bottom:8px"></div>
+    <div class="legend" id="tlLegend" style="margin:0 0 8px"></div>
+    <div id="tlWrap"><canvas id="tlCanvas"></canvas></div>
+    <div id="tlEmpty" class="empty" hidden data-i18n="tlv.empty">这段时间没有会话活动</div>
+    <div id="flowSection" hidden>
+      <div class="sec"><span id="flowTitle" data-i18n="flow.title">会话操作流程</span></div>
+      <div class="tlnote" data-i18n="flow.hint" style="margin-bottom:8px"></div>
+      <div id="flowBox"></div>
+    </div>
+    <div id="flowPick" class="tlnote" data-i18n="flow.pick" style="margin-top:10px"></div>
+  </section>
+
+  <section id="tab-sessions" hidden>
+    <div class="tlnote" data-i18n="ses.hint" style="margin-bottom:8px"></div>
+    <div id="sesSummary" class="dmeta" style="margin-bottom:10px"></div>
+    <table><thead><tr><th data-i18n="ses.col.heart">心跳</th><th>Agent</th><th data-i18n="ses.col.kind">来源</th><th data-i18n="ses.col.where">目录 / 进程</th><th data-i18n="ses.col.last">最后活动</th><th data-i18n="ses.col.events">事件 / 拦截</th><th data-i18n="th.started">开始</th></tr></thead>
+    <tbody id="sessionsBody"></tbody></table>
+  </section>
+
+  <section id="tab-status" hidden>
+    <div class="sec"><span data-i18n="stat.sec.quota">账号额度</span><span class="sec-note" data-i18n="stat.quotaNote"></span>
+      <select id="barScheme" data-i18n-attr="title:stat.schemeTitle"></select></div>
+    <div id="quotaBox" class="panel"></div>
+    <div class="sec"><span data-i18n="stat.sec.models">模型使用统计</span><span class="sec-note" data-i18n="stat.modelsNote"></span></div>
+    <div id="modelBox" class="panel"></div>
+    <div class="sec"><span data-i18n="stat.sec.board">会话状态</span><span class="sec-note" data-i18n="stat.boardNote"></span></div>
+    <div id="boardBox" class="board"></div>
+  </section>
+
+  <section id="tab-coverage" hidden>
+    <p class="reason" data-i18n="cov.intro">不同 AI 客户端可被拦截的深度不同：CLI 通常可做到工具调用级事前阻断；GUI 桌面端（证书固定/忽略代理的）往往只能观测，无请求级事前阻断。此处如实标注。</p>
+    <table><thead><tr><th data-i18n="th.client">客户端</th><th data-i18n="th.kind">类型</th><th data-i18n="th.intercept">拦截级别</th><th>Hook</th><th data-i18n="th.note">说明</th></tr></thead>
+    <tbody id="coverageBody"></tbody></table>
+  </section>
+</main>
+<div id="tlTooltip" class="tt" hidden></div>
+<div id="settingsModal" class="modal" hidden>
+  <div class="modal-box" style="width:min(480px,100%)">
+    <div class="modal-head"><b data-i18n="settings.title">外观设置</b></div>
+    <div class="field"><span data-i18n="settings.themeLabel">主题配色</span><div id="themeGrid" class="theme-grid"></div></div>
+    <label class="field"><span data-i18n="settings.fontLabel">界面字体</span>
+      <select id="fontSel">
+        <option value="system" data-i18n="settings.font.system">系统默认</option>
+        <option value="mono" data-i18n="settings.font.mono">等宽字体</option>
+        <option value="serif" data-i18n="settings.font.serif">衬线字体</option>
+        <option value="rounded" data-i18n="settings.font.rounded">圆体</option>
+        <option value="kaiti" data-i18n="settings.font.kaiti">楷体</option>
+        <option value="heiti" data-i18n="settings.font.heiti">黑体（思源黑体）</option>
+        <option value="songti" data-i18n="settings.font.songti">宋体（思源宋体）</option>
+      </select></label>
+    <label class="field"><span><span data-i18n="settings.sizeLabel">界面字号</span>: <span id="fontSizeVal">14</span>px</span>
+      <input id="fontSizeRange" type="range" min="12" max="18" step="1" value="14"></label>
+    <div class="font-preview" data-i18n="settings.previewText">X-Monitor 正在监控 AI Agent 的文件读写、命令执行与网络连接。</div>
+    <div class="modal-actions"><button class="btn ghost" id="settingsReset" type="button" data-i18n="settings.reset">恢复默认</button><button class="btn" id="settingsClose" type="button" data-i18n="modal.close">关闭</button></div>
+  </div>
+</div>
+<div id="modal" class="modal" hidden>
+  <div class="modal-box">
+    <div class="modal-head"><b id="modalTitle"></b><button class="btn ghost" id="modalClose" type="button" data-i18n="modal.close">关闭</button></div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+<script src="/timeline.js"></script>
+<script>
+const qs=new URLSearchParams(location.search);
+const store={get(k){try{return localStorage.getItem(k)||''}catch(e){return ''}},set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}};
+/* Token: from ?token= (remembered, then stripped from the address bar), else the remembered one. */
+let TOKEN=qs.get('token')||'';
+if(TOKEN){ if(store.set('xmon_token',TOKEN)){ try{history.replaceState(null,'',location.pathname)}catch(e){} } }
+else TOKEN=store.get('xmon_token');
+const H=TOKEN?{'X-Token':TOKEN}:{};
+let UNAUTH=false;
+const showAuth=(on)=>{UNAUTH=on;document.getElementById('authBanner').hidden=!on;};
+const showNet=(on)=>{document.getElementById('netBanner').hidden=!on;};
+/* A failed request must never leave the page silently empty. */
+const api=(p)=>fetch('/api'+p,{headers:H}).then(
+  r=>{ if(r.status===401){showAuth(true);throw new Error('unauthorized');}
+       if(!r.ok){throw new Error('http '+r.status);}
+       showAuth(false);showNet(false);return r.json(); },
+  e=>{showNet(true);throw e;});
+window.addEventListener('unhandledrejection',e=>e.preventDefault());
+const esc=(s)=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- i18n ---------- */
+const I18N={
+zh:{
+ 'doc.title':'X-Monitor',
+ 'lang.title':'切换语言 / Switch language',
+ 'tab.overview':'总览','tab.approvals':'审批台','tab.events':'事件','tab.sessions':'会话','tab.coverage':'覆盖能力',
+ 'auth.title':'未授权','auth.body':'缺少或错误的访问令牌。在终端运行 xmon ui 获取带令牌的完整地址，或在此粘贴令牌：','auth.placeholder':'访问令牌','auth.button':'使用令牌','net.down':'无法连接到 xmond 守护进程，请确认它正在运行（xmon status）。',
+ 'pill.mode':'模式：{mode}','pill.rules':'{n} 规则',
+ 'tab.timeline':'操作时间线',
+ 'tlv.title':'会话操作时间线',
+ 'tlv.hint':'每个会话一条泳道，横轴是时间；柱子颜色是这一段时间里最严重的风险，红框表示这段时间内有操作被拦截。点击会话或时间段查看它的操作流程。',
+ 'tlv.empty':'这段时间没有会话活动','tlv.unattributed':'未归属',
+ 'tlv.legend.blocked':'含被拦截操作',
+ 'tlv.axis':'每格 {m} 分钟',
+ 'tlv.tt.total':'共 {n} 条事件',
+ 'tlv.tt.blocked':'拦截 {n}',
+ 'tlv.tt.events':'{n} 条事件',
+ 'tlv.tt.click':'点击查看操作流程',
+ 'flow.title':'会话操作流程',
+ 'flow.hint':'同一会话连续的操作按时间串起来；间隔超过 5 分钟另起一轮。状态是 X-Monitor 当时的判定（放行 / 经确认放行 / 拦截 / 被拒绝），不是工具后来是否执行成功。',
+ 'flow.pick':'点击上方的会话或时间段，查看它的操作流程。',
+ 'flow.loading':'加载中…',
+ 'flow.failed':'加载操作流程失败：{err}',
+ 'ov.range.1h':'最近 1 小时',
+ 'ov.range.6h':'最近 6 小时',
+ 'ov.range.24h':'最近 24 小时',
+ 'ov.range.7d':'最近 7 天',
+ 'ov.top.mode':'介入状态',
+ 'ov.top.sessions':'受管会话（运行中）',
+ 'ov.top.sessionsSub':'共 {n} 个会话 · {a} 个 Agent',
+ 'ov.top.pending':'待审批',
+ 'ov.top.pendingSub':'有操作在等你确认 · 点击处理',
+ 'ov.top.pendingNone':'没有待处理的确认',
+ 'ov.top.blocked':'已拦截的高危操作',
+ 'ov.top.blockedSub':'{n} 条疑似绕过监测 · 点击查看',
+ 'ov.top.layers':'防护层',
+ 'ov.layer.glm':'语义审计 GLM',
+ 'ov.layer.sandbox':'内核沙箱',
+ 'ov.layer.kill':'exec 后即杀',
+ 'ov.on':'已开启',
+ 'ov.off':'未开启',
+ 'ov.avail':'可用',
+ 'ov.unavail':'不可用',
+ 'ov.mode.label':'介入级别',
+ 'ov.mode.active':'拦截中',
+ 'ov.mode.paused':'观察模式',
+ 'ov.mode.stopped':'已关闭',
+ 'ov.mode.active.desc':'命中规则的高危操作会被直接拦下，中危的弹出确认框问你，其余记录在案。',
+ 'ov.mode.paused.desc':'照常判定并记录，但从不拦截、也不弹确认框。',
+ 'ov.mode.stopped.desc':'完全不介入：不判定、不记录。',
+ 'ov.mode.failed':'切换失败：{err}',
+ 'ov.sec.security':'安全',
+ 'ov.sec.securityNote':'按命中的规则归类，近似识别、非精确 · 点卡片看明细',
+ 'ov.sec.activity':'活动',
+ 'theme.title':'界面主题','theme.brand':'标准配色','theme.dark':'深色','theme.light':'浅色','theme.dracula':'Dracula','theme.nord':'Nord','theme.midnight':'Midnight','theme.ocean':'Ocean','theme.forest':'Forest','theme.sunset':'Sunset','theme.rose':'Rose',
+ 'det.title':'检测到的 AI','det.note':'来自进程树扫描：主机上正在运行的 AI Agent，以及 X-Monitor 对它们能做到什么',
+ 'det.none':'当前没有检测到正在运行的 AI Agent','det.managed':'已受管','det.unmanaged':'未受管',
+ 'det.hookOn':'Hook 已安装','det.hookOff':'Hook 未安装','det.verified':'已验证','det.experimental':'实验性',
+ 'det.procs':'{n} 个进程','det.events':'{n} 个事件','det.noEvents':'尚无事件',
+ 'det.managedNote':'经 xmon run 启动，代理可事前拦截每次工具调用',
+ 'det.unmanagedNote':'目前只能通过进程树/文件层观测，不能事前拦截。',
+ 'det.action':'建议','det.copy':'复制','det.copied':'已复制',
+ 'det.hookRestart':'安装后需重启该 Agent 才会加载','det.hooked':'Hook 拦截','det.hookedNote':'已收到该 Agent 的 Hook 上报：每次工具调用前由 xmon-hook 判定，可事前拦截（不经过代理）。','det.hookPending':'待重启生效','det.hookPendingNote':'插件已写入，但还没收到它的 Hook 上报：请重启该 Agent，让它加载插件。',
+ 'st.attention':'需处理',
+ 'ov.sec.tools':'工具调用',
+ 'ov.sec.trend':'趋势',
+ 'ov.sec.dist':'分布',
+ 'cat.destruction':'破坏性操作',
+ 'cat.credentials':'凭据与敏感数据',
+ 'cat.exfiltration':'数据外泄',
+ 'cat.supply_chain':'供应链 / 安装',
+ 'cat.persistence':'持久化后门',
+ 'cat.privilege':'提权',
+ 'cat.c2':'远控与攻击工具',
+ 'cat.workspace':'越界工作目录',
+ 'cat.evasion':'规避监控',
+ 'cat.injection':'提示注入',
+ 'ov.cat.sub':'拦截 {b} · 需确认 {c}',
+ 'act.events':'审计事件',
+ 'act.calls':'工具调用',
+ 'act.alerts':'告警',
+ 'act.sessions':'会话',
+ 'act.agents':'识别到的 Agent',
+ 'act.observe':'系统层观测',
+ 'tc.exec.shell':'Shell 命令',
+ 'tc.fs.read':'读取文件',
+ 'tc.fs.search':'搜索文件',
+ 'tc.fs.write':'写入文件',
+ 'tc.fs.edit':'编辑文件',
+ 'tc.fs.delete':'删除文件',
+ 'tc.net.fetch':'网页抓取',
+ 'tc.net.search':'联网搜索',
+ 'tc.mcp.call':'MCP 调用',
+ 'tc.agent.spawn':'子 Agent',
+ 'tc.agent.ask':'向用户提问',
+ 'tc.other':'其它',
+ 'dist.layer':'层分布',
+ 'dist.risk':'风险等级分布',
+ 'dist.decision':'处置结果分布',
+ 'dist.rules':'触发最多的规则',
+ 'dist.agents':'Agent 分布',
+ 'dist.none':'暂无数据',
+ 'trend.legendTotal':'全部事件',
+ 'trend.legendBlocked':'被拦截',
+ 'trend.tip':'{time} · {n} 条，其中拦截 {b}',
+ 'modal.shown':'共 {n} 条，仅显示最近 {m} 条','modal.agentEvents':'{n} 条事件 · 点击查看','modal.close':'关闭',
+ 'modal.blocked':'被拦截的高危操作',
+ 'modal.cat':'{name} · 近期事件',
+ 'modal.empty':'这段时间没有相关记录',
+ 'ev.riskge':'风险≥','ev.all':'全部','ev.live':'实时推送','ev.none':'暂无事件',
+ 'th.time':'时间','th.layer':'层','th.type':'类型','th.decision':'决策','th.risk':'风险','th.rule':'规则','th.detail':'详情',
+ 'th.session':'会话','th.cwd':'目录','th.started':'开始','th.status':'状态',
+ 'th.client':'客户端','th.kind':'类型','th.intercept':'拦截级别','th.note':'说明',
+ 'ses.none':'暂无会话',
+ 'tab.status':'状态',
+ 'stat.sec.quota':'账号额度','stat.quotaNote':'Anthropic 套餐的 5 小时 / 每周额度，来自本机 Claude Code 登录凭证',
+ 'stat.schemeTitle':'额度进度条的配色方案，只改本浏览器的显示',
+ 'stat.scheme.traffic':'配色：红黄绿三档','stat.scheme.steps':'配色：分段色阶','stat.scheme.ocean':'配色：蓝青','stat.scheme.sunset':'配色：日落暖','stat.scheme.accent':'配色：主题强调色','stat.scheme.mono':'配色：灰度',
+ 'stat.off.title':'额度查询默认关闭','stat.off.body':'开启后，守护进程会读取本机 Claude Code 的 OAuth 登录令牌，向 api.anthropic.com 查询套餐额度（与 CC-Monitor、ccstatusline 做法相同）。令牌只在内存里用于这一次请求，只发给 Anthropic，不写盘、不记日志。注意：这是逆向得到的非公开接口，可能随时变化；用订阅令牌给第三方工具查询也可能不符合服务条款。macOS 第一次读取钥匙串时系统会弹确认框。',
+ 'stat.off.how':'要开启，在 ~/.xmon/config.yaml 里加入下面几行，然后重启 xmond（xmon stop && xmon start）：',
+ 'stat.err':'额度查询失败：{msg}','stat.fetched':'更新于 {t}（缓存 3 分钟）','stat.plan':'套餐','stat.tier':'额度档位',
+ 'stat.q.session':'单次额度（5 小时窗口）','stat.q.weekly':'周额度（全部模型）','stat.q.weeklySonnet':'周额度（Sonnet）','stat.q.weeklyOpus':'周额度（Opus）','stat.q.weeklyModel':'周额度（{model}）',
+ 'stat.used':'已用','stat.left':'剩余','stat.resets':'重置','stat.resetsIn':'{d} 后重置','stat.unknown':'未知',
+ 'stat.limits':'额度明细','stat.col.kind':'类型','stat.col.pct':'已用','stat.col.sev':'级别','stat.col.reset':'重置时间','stat.col.active':'当前生效',
+ 'stat.kind.session':'会话额度','stat.kind.weekly_all':'周额度（全部模型）','stat.kind.weekly_scoped':'周额度（按模型）',
+ 'stat.spend':'额外使用额度（spend）','stat.spendOff':'未开启','stat.spendUsed':'已花费',
+ 'stat.sev.normal':'正常','stat.sev.warning':'警告','stat.sev.critical':'严重',
+ 'stat.sec.models':'模型使用统计','stat.modelsNote':'按模型汇总被审计的工具调用次数（不统计 token：代理只改写工具调用，不计量用量）；时间范围同总览',
+ 'stat.m.model':'模型','stat.m.calls':'工具调用','stat.m.blocked':'被拦截','stat.m.sessions':'涉及会话','stat.m.agents':'涉及 Agent','stat.m.last':'最近一次','stat.m.none':'暂无数据——只有经 xmon run 走代理的会话才会记录模型',
+ 'stat.sec.board':'会话状态','stat.boardNote':'每个 AI 一张卡：心跳、目录、Git 分支、事件与拦截情况；点击查看事件','stat.b.none':'暂无会话',
+ 'stat.b.events':'事件','stat.b.blocked':'拦截','stat.b.last':'最后活动','stat.b.started':'开始','stat.b.pending':'待审批',
+ 'settings.btnTitle':'外观设置：主题 / 字体 / 字号','settings.title':'外观设置','settings.themeLabel':'主题配色','settings.fontLabel':'界面字体',
+ 'settings.font.system':'系统默认','settings.font.mono':'等宽字体','settings.font.serif':'衬线字体','settings.font.rounded':'圆体','settings.font.kaiti':'楷体','settings.font.heiti':'黑体（思源黑体）','settings.font.songti':'宋体（思源宋体）',
+ 'settings.sizeLabel':'界面字号','settings.previewText':'X-Monitor 正在监控 AI Agent 的文件读写、命令执行与网络连接。','settings.reset':'恢复默认',
+ 'logs.autoScroll':'自动滚动到最新','ev.newPending':'有 {n} 条新事件，点击显示','ov.top.sessionsOpen':'点击查看全部会话',
+ 'ses.hint':'所有被监测的 AI：经 xmon run 启动的会话、主机上检测到的未受管进程、导入的历史会话。心跳颜色越深、波形越大，表示越近有活动；5 分钟内才会跳动。',
+ 'ses.col.heart':'心跳','ses.col.kind':'来源','ses.col.where':'目录 / 进程','ses.col.last':'最后活动','ses.col.events':'事件 / 拦截',
+ 'ses.kind.managed':'受管','ses.kind.hook':'Hook 上报','ses.kind.process':'未受管进程','ses.kind.imported':'导入',
+ 'ses.st.working':'工作中','ses.st.idle':'空闲','ses.st.blocked':'待审批','ses.st.dead':'已结束',
+ 'ses.stTip.working':'5 分钟内有活动','ses.stTip.idle':'进程还在，但最近没有动静','ses.stTip.blocked':'正在等待你审批','ses.stTip.dead':'进程已退出',
+ 'ses.ago.now':'刚刚','ses.ago.s':'{n} 秒前','ses.ago.m':'{n} 分钟前','ses.ago.h':'{n} 小时前','ses.ago.d':'{n} 天前','ses.ago.never':'无记录',
+ 'ses.sum':'{n} 个运行中','ses.openEvents':'查看该会话的事件','ses.children':'{n} 个子进程','ses.running':'运行中','ses.ended':'已结束',
+ 'ap.none':'没有待审批的操作','ap.rule':'规则','ap.glm':'GLM 判断：','ap.once':'允许一次','ap.session':'本会话允许','ap.deny':'拒绝',
+ 'cov.intro':'不同 AI 客户端可被拦截的深度不同：CLI 通常可做到工具调用级事前阻断；GUI 桌面端（证书固定/忽略代理的）往往只能观测，无请求级事前阻断。此处如实标注。',
+ 'risk.info':'信息','risk.low':'低','risk.medium':'中','risk.high':'高','risk.critical':'严重',
+ 'dec.allow':'放行','dec.block':'拦截','dec.confirm':'需确认','dec.log':'记录','dec.notify':'通知',
+ 'icpt.env':'完整','icpt.config':'需配置','icpt.proxy':'有限','icpt.observe':'仅观测',
+ 'layer.L1':'L1 内核','layer.L2':'L2 文件','layer.L3':'L3 进程','layer.L4':'L4 代理','layer.hook':'Hook',
+ 'kind.cli':'命令行','kind.gui':'桌面端','kind.plugin':'IDE 插件',
+ 'mode.active':'主动','mode.paused':'暂停','mode.stopped':'停止',
+ 'glm.disabled':'未启用',
+ 'e.agent_seen':'经代理识别到 AI 客户端：{name}',
+ 'e.secret_egress':'凭据可能随请求发往云端模型',
+ 'e.prompt_injection':'工具结果中疑似提示注入',
+ 'e.hook_bypass':'检测到未经意图层审查就执行的命令（疑似绕过监控）',
+ 'e.blocked_but_executed':'被拦截的操作仍被执行',
+ 'e.exec_denied_killed':'已终止策略禁止的程序',
+ 'e.exec_denied_failed':'策略禁止的程序已执行，但终止失败',
+ 'e.silent_sensitive_write':'无对应意图的敏感文件变更',
+ 'e.proc_spawn':'Agent 进程树新进程',
+ 'e.execve':'内核层进程执行',
+ 'e.connect':'内核层网络连接',
+ 'e.direct_llm':'AI 客户端直连 LLM：{name}',
+ 'e.fs_sensitive':'敏感文件变更','e.fs':'文件变更',
+ 'e.unmanaged':'发现未受管的 AI Agent',
+ 'e.ccmonitor':'CC-Monitor 事件',
+ 'r.read_then_egress':'读取敏感信息后发起外部网络访问'
+},
+en:{
+ 'doc.title':'X-Monitor',
+ 'lang.title':'Switch language / 切换语言',
+ 'tab.overview':'Overview','tab.approvals':'Approvals','tab.events':'Events','tab.sessions':'Sessions','tab.coverage':'Coverage',
+ 'auth.title':'Unauthorized','auth.body':'The access token is missing or wrong. Run xmon ui in a terminal for the full URL, or paste the token here:','auth.placeholder':'Access token','auth.button':'Use token','net.down':'Cannot reach the xmond daemon. Check that it is running (xmon status).',
+ 'pill.mode':'Mode: {mode}','pill.rules':'{n} rules',
+ 'tab.timeline':'Timeline',
+ 'tlv.title':'Session operation timeline',
+ 'tlv.hint':'One lane per session over time. A bar\'s color is the worst risk in that slot, and a red outline means something was blocked. Click a lane or a slot to see its operation flow.',
+ 'tlv.empty':'No session activity in this period','tlv.unattributed':'Unattributed',
+ 'tlv.legend.blocked':'Contains a blocked operation',
+ 'tlv.axis':'{m} min per slot',
+ 'tlv.tt.total':'{n} events in total',
+ 'tlv.tt.blocked':'{n} blocked',
+ 'tlv.tt.events':'{n} events',
+ 'tlv.tt.click':'Click to see the operation flow',
+ 'flow.title':'Session operation flow',
+ 'flow.hint':'A session\'s consecutive operations are chained in time; an idle gap over 5 minutes starts a new turn. The status is what X-Monitor decided at the time (allowed / allowed after confirmation / blocked / refused), not whether the tool later succeeded.',
+ 'flow.pick':'Click a lane or a slot above to see its operation flow.',
+ 'flow.loading':'Loading…',
+ 'flow.failed':'Could not load the operation flow: {err}',
+ 'ov.range.1h':'Last hour',
+ 'ov.range.6h':'Last 6 hours',
+ 'ov.range.24h':'Last 24 hours',
+ 'ov.range.7d':'Last 7 days',
+ 'ov.top.mode':'Intervention',
+ 'ov.top.sessions':'Managed sessions (running)',
+ 'ov.top.sessionsSub':'{n} sessions in total · {a} agents',
+ 'ov.top.pending':'Pending approvals',
+ 'ov.top.pendingSub':'Operations are waiting for you · click to review',
+ 'ov.top.pendingNone':'Nothing waiting for confirmation',
+ 'ov.top.blocked':'Blocked risky operations',
+ 'ov.top.blockedSub':'{n} suspected bypasses · click to view',
+ 'ov.top.layers':'Protection layers',
+ 'ov.layer.glm':'GLM semantic audit',
+ 'ov.layer.sandbox':'Kernel sandbox',
+ 'ov.layer.kill':'Kill after exec',
+ 'ov.on':'On',
+ 'ov.off':'Off',
+ 'ov.avail':'Available',
+ 'ov.unavail':'Unavailable',
+ 'ov.mode.label':'Intervention level',
+ 'ov.mode.active':'Enforcing',
+ 'ov.mode.paused':'Observe only',
+ 'ov.mode.stopped':'Off',
+ 'ov.mode.active.desc':'High-risk operations that hit a rule are blocked outright, medium-risk ones ask you to confirm, and everything is logged.',
+ 'ov.mode.paused.desc':'Operations are judged and logged as usual, but nothing is blocked and no confirmation is asked.',
+ 'ov.mode.stopped.desc':'Fully hands-off: nothing is judged or recorded.',
+ 'ov.mode.failed':'Could not switch: {err}',
+ 'ov.sec.security':'Security',
+ 'ov.sec.securityNote':'Grouped by the rules that fired — approximate, not exact · click a card for details',
+ 'ov.sec.activity':'Activity',
+ 'theme.title':'Theme','theme.brand':'Standard','theme.dark':'Dark','theme.light':'Light','theme.dracula':'Dracula','theme.nord':'Nord','theme.midnight':'Midnight','theme.ocean':'Ocean','theme.forest':'Forest','theme.sunset':'Sunset','theme.rose':'Rose',
+ 'det.title':'Detected AI','det.note':'From the process-tree scan: AI agents running on this host, and what X-Monitor can do about each',
+ 'det.none':'No running AI agent detected right now','det.managed':'Managed','det.unmanaged':'Unmanaged',
+ 'det.hookOn':'Hook installed','det.hookOff':'Hook not installed','det.verified':'Verified','det.experimental':'Experimental',
+ 'det.procs':'{n} processes','det.events':'{n} event(s)','det.noEvents':'No events yet',
+ 'det.managedNote':'Started through xmon run: the proxy can block every tool call before it runs',
+ 'det.unmanagedNote':'Observed only through the process tree / file layer; calls cannot be blocked beforehand.',
+ 'det.action':'Suggested','det.copy':'Copy','det.copied':'Copied',
+ 'det.hookRestart':'Restart the agent after installing for it to load the hook','det.hooked':'Hook-guarded','det.hookedNote':'Hook reports are arriving from this agent: xmon-hook vets every tool call before it runs (not through the proxy).','det.hookPending':'Restart needed','det.hookPendingNote':'The plugin is installed, but no hook report has arrived yet: restart the agent so it loads the plugin.',
+ 'st.attention':'Needs attention',
+ 'ov.sec.tools':'Tool calls',
+ 'ov.sec.trend':'Trend',
+ 'ov.sec.dist':'Distribution',
+ 'cat.destruction':'Destructive',
+ 'cat.credentials':'Credentials & sensitive data',
+ 'cat.exfiltration':'Exfiltration',
+ 'cat.supply_chain':'Supply chain / installs',
+ 'cat.persistence':'Persistence',
+ 'cat.privilege':'Privilege',
+ 'cat.c2':'C2 & offensive tools',
+ 'cat.workspace':'Outside workspace',
+ 'cat.evasion':'Monitor evasion',
+ 'cat.injection':'Prompt injection',
+ 'ov.cat.sub':'Blocked {b} · Confirm {c}',
+ 'act.events':'Audit events',
+ 'act.calls':'Tool calls',
+ 'act.alerts':'Alerts',
+ 'act.sessions':'Sessions',
+ 'act.agents':'Agents seen',
+ 'act.observe':'System-layer observations',
+ 'tc.exec.shell':'Shell commands',
+ 'tc.fs.read':'File reads',
+ 'tc.fs.search':'File searches',
+ 'tc.fs.write':'File writes',
+ 'tc.fs.edit':'File edits',
+ 'tc.fs.delete':'File deletes',
+ 'tc.net.fetch':'Web fetches',
+ 'tc.net.search':'Web searches',
+ 'tc.mcp.call':'MCP calls',
+ 'tc.agent.spawn':'Sub-agents',
+ 'tc.agent.ask':'Questions to user',
+ 'tc.other':'Other',
+ 'dist.layer':'By layer',
+ 'dist.risk':'By risk level',
+ 'dist.decision':'By outcome',
+ 'dist.rules':'Most-triggered rules',
+ 'dist.agents':'By agent',
+ 'dist.none':'No data yet',
+ 'trend.legendTotal':'All events',
+ 'trend.legendBlocked':'Blocked',
+ 'trend.tip':'{time} · {n} events, {b} blocked',
+ 'modal.shown':'{n} in total — showing the latest {m}','modal.agentEvents':'{n} events · click to view','modal.close':'Close',
+ 'modal.blocked':'Blocked risky operations',
+ 'modal.cat':'{name} · recent events',
+ 'modal.empty':'Nothing recorded in this period',
+ 'ev.riskge':'Risk ≥','ev.all':'All','ev.live':'Live updates','ev.none':'No events yet',
+ 'th.time':'Time','th.layer':'Layer','th.type':'Type','th.decision':'Decision','th.risk':'Risk','th.rule':'Rule','th.detail':'Details',
+ 'th.session':'Session','th.cwd':'Directory','th.started':'Started','th.status':'Status',
+ 'th.client':'Client','th.kind':'Kind','th.intercept':'Interception','th.note':'Notes',
+ 'ses.none':'No sessions yet',
+ 'tab.status':'Status',
+ 'stat.sec.quota':'Account quota','stat.quotaNote':'Anthropic plan: 5-hour and weekly allowance, read through the local Claude Code login',
+ 'stat.schemeTitle':'Colour scheme of the quota bars; only changes this browser',
+ 'stat.scheme.traffic':'Colours: traffic light','stat.scheme.steps':'Colours: stepped','stat.scheme.ocean':'Colours: blue-teal','stat.scheme.sunset':'Colours: sunset','stat.scheme.accent':'Colours: theme accent','stat.scheme.mono':'Colours: greyscale',
+ 'stat.off.title':'Quota lookup is off by default','stat.off.body':'When on, the daemon reads the OAuth login token Claude Code keeps on this machine and asks api.anthropic.com for the plan quota (the same approach as CC-Monitor and ccstatusline). The token is used in memory for that one request, sent only to Anthropic, and never written to disk or logged. Note: this is a reverse-engineered, non-public endpoint that can change at any time, and using a subscription token from a third-party tool may be against the provider\'s terms. On macOS the system asks for confirmation the first time the keychain is read.',
+ 'stat.off.how':'To turn it on, add these lines to ~/.xmon/config.yaml and restart xmond (xmon stop && xmon start):',
+ 'stat.err':'Quota lookup failed: {msg}','stat.fetched':'Updated {t} (cached for 3 minutes)','stat.plan':'Plan','stat.tier':'Rate tier',
+ 'stat.q.session':'Session (5-hour window)','stat.q.weekly':'Weekly (all models)','stat.q.weeklySonnet':'Weekly (Sonnet)','stat.q.weeklyOpus':'Weekly (Opus)','stat.q.weeklyModel':'Weekly ({model})',
+ 'stat.used':'Used','stat.left':'Left','stat.resets':'Resets','stat.resetsIn':'resets in {d}','stat.unknown':'unknown',
+ 'stat.limits':'Limit details','stat.col.kind':'Kind','stat.col.pct':'Used','stat.col.sev':'Severity','stat.col.reset':'Resets at','stat.col.active':'Active',
+ 'stat.kind.session':'Session allowance','stat.kind.weekly_all':'Weekly (all models)','stat.kind.weekly_scoped':'Weekly (per model)',
+ 'stat.spend':'Extra usage (spend)','stat.spendOff':'Not enabled','stat.spendUsed':'Spent',
+ 'stat.sev.normal':'Normal','stat.sev.warning':'Warning','stat.sev.critical':'Critical',
+ 'stat.sec.models':'Model usage','stat.modelsNote':'Audited tool calls per model (tokens are not counted: the proxy rewrites tool calls, it does not meter usage); same time range as the overview',
+ 'stat.m.model':'Model','stat.m.calls':'Tool calls','stat.m.blocked':'Blocked','stat.m.sessions':'Sessions','stat.m.agents':'Agents','stat.m.last':'Last seen','stat.m.none':'No data yet — the model is only recorded for sessions that go through the proxy (xmon run)',
+ 'stat.sec.board':'Session status','stat.boardNote':'One card per AI: heartbeat, directory, Git branch, events and blocks; click for its events','stat.b.none':'No sessions yet',
+ 'stat.b.events':'Events','stat.b.blocked':'Blocked','stat.b.last':'Last active','stat.b.started':'Started','stat.b.pending':'Awaiting approval',
+ 'settings.btnTitle':'Appearance: theme / font / size','settings.title':'Appearance','settings.themeLabel':'Color theme','settings.fontLabel':'Interface font',
+ 'settings.font.system':'System default','settings.font.mono':'Monospace','settings.font.serif':'Serif','settings.font.rounded':'Rounded','settings.font.kaiti':'Kaiti (calligraphy-style)','settings.font.heiti':'Heiti (Source Han Sans)','settings.font.songti':'Songti (Source Han Serif)',
+ 'settings.sizeLabel':'Interface font size','settings.previewText':'X-Monitor is watching your AI agents\' file reads/writes, command execution and network connections.','settings.reset':'Reset to defaults',
+ 'logs.autoScroll':'Auto-scroll to latest','ev.newPending':'{n} new events — click to show','ov.top.sessionsOpen':'Click to see all sessions',
+ 'ses.hint':'Every AI being monitored: sessions started with xmon run, unmanaged processes found on this host, and imported history. A deeper colour and bigger wave mean more recent activity; it only beats within 5 minutes.',
+ 'ses.col.heart':'Heartbeat','ses.col.kind':'Source','ses.col.where':'Directory / process','ses.col.last':'Last active','ses.col.events':'Events / blocked',
+ 'ses.kind.managed':'Managed','ses.kind.hook':'Via hook','ses.kind.process':'Unmanaged process','ses.kind.imported':'Imported',
+ 'ses.st.working':'Working','ses.st.idle':'Idle','ses.st.blocked':'Awaiting approval','ses.st.dead':'Ended',
+ 'ses.stTip.working':'Active within the last 5 minutes','ses.stTip.idle':'Process is alive but quiet','ses.stTip.blocked':'Waiting for your approval','ses.stTip.dead':'Process has exited',
+ 'ses.ago.now':'just now','ses.ago.s':'{n}s ago','ses.ago.m':'{n}m ago','ses.ago.h':'{n}h ago','ses.ago.d':'{n}d ago','ses.ago.never':'no record',
+ 'ses.sum':'{n} running','ses.openEvents':'Show this session\'s events','ses.children':'{n} child processes','ses.running':'Running','ses.ended':'Ended',
+ 'ap.none':'No operations awaiting approval','ap.rule':'Rule','ap.glm':'GLM verdict: ','ap.once':'Allow once','ap.session':'Allow for session','ap.deny':'Deny',
+ 'cov.intro':'Different AI clients can be intercepted to different depths: CLIs can usually be blocked before a tool call runs; GUI desktop apps (certificate-pinned or ignoring the proxy) are often observe-only, with no request-level pre-execution blocking. This is labeled honestly here.',
+ 'risk.info':'Info','risk.low':'Low','risk.medium':'Medium','risk.high':'High','risk.critical':'Critical',
+ 'dec.allow':'Allow','dec.block':'Block','dec.confirm':'Confirm','dec.log':'Log','dec.notify':'Notify',
+ 'icpt.env':'Full','icpt.config':'Needs config','icpt.proxy':'Limited','icpt.observe':'Observe only',
+ 'layer.L1':'L1 Kernel','layer.L2':'L2 File','layer.L3':'L3 Process','layer.L4':'L4 Proxy','layer.hook':'Hook',
+ 'kind.cli':'CLI','kind.gui':'Desktop app','kind.plugin':'IDE plugin',
+ 'mode.active':'active','mode.paused':'paused','mode.stopped':'stopped',
+ 'glm.disabled':'disabled',
+ 'e.agent_seen':'AI client detected via proxy: {name}',
+ 'e.secret_egress':'Credentials may be sent to a cloud model with the request',
+ 'e.prompt_injection':'Suspected prompt injection in tool result',
+ 'e.hook_bypass':'Command executed without intent-layer review (possible monitoring bypass)',
+ 'e.blocked_but_executed':'A blocked operation was executed anyway',
+ 'e.exec_denied_killed':'Terminated a program the policy forbids',
+ 'e.exec_denied_failed':'A forbidden program ran and could not be terminated',
+ 'e.silent_sensitive_write':'Sensitive file change with no matching intent',
+ 'e.proc_spawn':'New process in agent process tree',
+ 'e.execve':'Kernel-level process exec',
+ 'e.connect':'Kernel-level network connection',
+ 'e.direct_llm':'AI client connected directly to LLM: {name}',
+ 'e.fs_sensitive':'Sensitive file change','e.fs':'File change',
+ 'e.unmanaged':'Unmanaged AI agent discovered',
+ 'e.ccmonitor':'CC-Monitor event',
+ 'r.read_then_egress':'External network access after reading sensitive data'
+}};
+const LS_KEY='xmon.lang';
+if(window.XTimeline){ Object.assign(I18N.zh,XTimeline.i18n.zh); Object.assign(I18N.en,XTimeline.i18n.en); }
+function detectLang(){
+  try{const v=localStorage.getItem(LS_KEY); if(v==='zh'||v==='en') return v;}catch(e){}
+  return String(navigator.language||'').toLowerCase().indexOf('zh')===0?'zh':'en';
+}
+let LANG=detectLang();
+function has(k){return Object.prototype.hasOwnProperty.call(I18N[LANG],k);}
+function t(k,p){
+  let s=has(k)?I18N[LANG][k]:(I18N.zh[k]!==undefined?I18N.zh[k]:k);
+  if(p) s=s.replace(/\{(\w+)\}/g,(m,n)=>p[n]!==undefined?p[n]:m);
+  return s;
+}
+const tOr=(k,raw)=>has(k)?t(k):(raw==null?'':raw);
+const locale=()=>LANG==='zh'?'zh-CN':'en-US';
+const fmtTime=(ms)=>new Date(ms).toLocaleTimeString(locale(),{hour12:false});
+
+/* ---------- state ---------- */
+let events=[], riskFilter='';
+let lastInfo=null, lastApprovals=null, lastSessions=null, lastCaps=null;
+let curTab='overview';
+let ruleMap=null, ruleLoading=false;
+
+async function loadRules(){
+  if(ruleMap||ruleLoading) return; ruleLoading=true;
+  try{
+    const list=await api('/rules'); const m={};
+    (list||[]).forEach(r=>{const id=r.ID||r.id; if(id) m[id]={title:r.Title||r.title||'',titleEn:r.TitleEn||r.title_en||'',desc:r.Desc||r.desc||'',descEn:r.DescEn||r.desc_en||''};});
+    ruleMap=m; renderEvents(); renderApprovals();
+  }catch(e){}
+  ruleLoading=false;
+}
+function ruleTitle(id){
+  if(!id) return '';
+  const r=ruleMap&&ruleMap[id];
+  if(r){ const s=LANG==='en'?(r.titleEn||r.title):(r.title||r.titleEn); if(s) return s; }
+  return tOr('r.'+id,'');
+}
+
+/* ---------- static i18n ---------- */
+function applyStatic(){
+  document.documentElement.lang=LANG==='zh'?'zh-CN':'en';
+  document.title=t('doc.title');
+  document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=t(el.getAttribute('data-i18n'));});
+  document.querySelectorAll('[data-i18n-attr]').forEach(el=>{
+    el.getAttribute('data-i18n-attr').split(',').forEach(pair=>{
+      const i=pair.indexOf(':'); if(i>0) el.setAttribute(pair.slice(0,i).trim(),t(pair.slice(i+1).trim()));
+    });
+  });
+  if(!settingsModal.hidden) renderThemeGrid();
+  document.querySelectorAll('[data-risk]').forEach(el=>{el.textContent=t('risk.'+el.getAttribute('data-risk'));});
+}
+function setLang(l){
+  LANG=l; try{localStorage.setItem(LS_KEY,l);}catch(e){}
+  applyStatic(); renderAll();
+}
+const THEMES=['brand','dark','light','dracula','nord','midnight','ocean','forest','sunset','rose'];
+let THEME=(()=>{ try{const v=localStorage.getItem('xmon.theme'); if(THEMES.includes(v)) return v;}catch(e){} return 'brand'; })();
+const THEME_ACCENT={brand:'#4757e8',dark:'#4f8cff',light:'#2f6fed',dracula:'#bd93f9',nord:'#88c0d0',midnight:'#6366f1',ocean:'#0ea5e9',forest:'#22c55e',sunset:'#f97316',rose:'#ec4899'};
+/* Plain font names only: nothing is downloaded, a font that is not installed falls back to the next one. */
+const FONT_STACKS={
+  system:'-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif',
+  mono:'Menlo,Consolas,"SF Mono","JetBrains Mono","LXGW WenKai","霞鹜文楷",monospace',
+  serif:'Georgia,"Songti SC","STSong",SimSun,"LXGW WenKai",serif',
+  rounded:'"SF Pro Rounded","Segoe UI","PingFang SC","Microsoft YaHei",sans-serif',
+  kaiti:'"楷体","STKaiti","Kaiti SC",KaiTi,"华文楷体","AR PL UKai CN","霞鹜文楷","LXGW WenKai",-apple-system,sans-serif',
+  heiti:'"Microsoft YaHei","微软雅黑","PingFang SC","苹方","Noto Sans CJK SC","Noto Sans SC","WenQuanYi Micro Hei",-apple-system,"Segoe UI",sans-serif',
+  songti:'"SimSun","宋体","Songti SC","STSong","Noto Serif CJK SC","AR PL UMing CN",Georgia,serif'};
+const lsGet=(k)=>{try{return localStorage.getItem(k)}catch(e){return null}}, lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+let FONT=FONT_STACKS[lsGet('xmon.font')]?lsGet('xmon.font'):'system', FONT_SIZE=Math.max(12,Math.min(18,parseInt(lsGet('xmon.fontsize'),10)||14));
+function applyFont(k){
+  FONT=FONT_STACKS[k]?k:'system'; document.documentElement.style.setProperty('--app-font',FONT_STACKS[FONT]); lsSet('xmon.font',FONT);
+  const sel=document.getElementById('fontSel'); if(sel) sel.value=FONT;
+}
+function applyFontSize(px){
+  FONT_SIZE=Math.max(12,Math.min(18,Number(px)||14)); document.documentElement.style.setProperty('--app-font-size',FONT_SIZE+'px'); lsSet('xmon.fontsize',String(FONT_SIZE));
+  const r=document.getElementById('fontSizeRange'), l=document.getElementById('fontSizeVal'); if(r) r.value=FONT_SIZE; if(l) l.textContent=FONT_SIZE;
+  if(typeof renderAll==='function'&&window.__booted) renderAll(); // canvases measure text in px
+}
+function renderThemeGrid(){
+  const g=document.getElementById('themeGrid');
+  g.innerHTML=THEMES.map(k=>`<button type="button" class="theme-swatch${k===THEME?' active':''}" data-theme="${k}"><span class="swatch-dot" style="background:${THEME_ACCENT[k]}"></span>${esc(t('theme.'+k))}</button>`).join('');
+}
+function setTheme(k){
+  if(!THEMES.includes(k)) return; THEME=k;
+  document.documentElement.dataset.theme=k; lsSet('xmon.theme',k);
+  document.querySelectorAll('.theme-swatch').forEach(b=>b.classList.toggle('active',b.dataset.theme===k));
+  renderAll(); // canvases read their colours from the CSS variables when they draw
+}
+document.getElementById('themeGrid').addEventListener('click',(e)=>{ const b=e.target.closest('[data-theme]'); if(b) setTheme(b.dataset.theme); });
+const settingsModal=document.getElementById('settingsModal');
+document.getElementById('settingsBtn').onclick=()=>{ renderThemeGrid(); applyFont(FONT); applyFontSize(FONT_SIZE); settingsModal.hidden=false; };
+document.getElementById('settingsClose').onclick=()=>{ settingsModal.hidden=true; };
+settingsModal.addEventListener('click',(e)=>{ if(e.target===settingsModal) settingsModal.hidden=true; });
+document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') settingsModal.hidden=true; });
+document.getElementById('fontSel').onchange=(e)=>applyFont(e.target.value);
+document.getElementById('fontSizeRange').oninput=(e)=>applyFontSize(e.target.value);
+document.getElementById('settingsReset').onclick=()=>{ setTheme('brand'); applyFont('system'); applyFontSize(14); };
+applyFont(FONT); applyFontSize(FONT_SIZE);
+document.documentElement.dataset.theme=THEME;
+document.getElementById('langBtn').onclick=()=>setLang(LANG==='zh'?'en':'zh');
+
+/* ---------- labels ---------- */
+const interceptBadge={env:'r-low',config:'r-medium',proxy:'r-medium',observe:'r-high'};
+const riskLabel=(r)=>tOr('risk.'+r,r);
+const decLabel=(d)=>tOr('dec.'+d,d);
+const layerLabel=(l)=>tOr('layer.'+l,l);
+
+function eventTitle(e){
+  const f=e.fields||{}, ty=e.type, zt=e.title||'';
+  const after=()=>{const i=zt.indexOf('：'); return i>=0?zt.slice(i+1):'';};
+  switch(ty){
+    case 'agent_seen': return t('e.agent_seen',{name:after()||e.agent||'?'});
+    case 'exec_denied': return t(f.killed?'e.exec_denied_killed':'e.exec_denied_failed');
+    case 'secret_egress': case 'prompt_injection': case 'hook_bypass':
+    case 'blocked_but_executed': case 'silent_sensitive_write': case 'proc_spawn': case 'execve':
+      return t('e.'+ty);
+    case 'connect':
+      if(zt.indexOf('AI 客户端直连 LLM')===0) return t('e.direct_llm',{name:after()||e.agent||'?'});
+      if(zt==='内核层网络连接'||!zt) return t('e.connect');
+      return zt;
+    case 'write': case 'create': case 'unlink': case 'rename':
+      if(zt==='敏感文件变更') return t('e.fs_sensitive');
+      if(zt==='文件变更') return t('e.fs');
+      return zt;
+  }
+  if(zt==='发现未受管的 AI Agent') return t('e.unmanaged');
+  if(zt==='CC-Monitor 事件') return t('e.ccmonitor');
+  const rt=ruleTitle(e.rule); if(rt) return rt;
+  return zt;
+}
+
+/* ---------- views ---------- */
+function tab(name){
+  curTab=name;
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
+  ['overview','approvals','events','timeline','sessions','status','coverage'].forEach(x=>document.getElementById('tab-'+x).hidden=(x!==name));
+  if(name==='overview') loadOverview();
+  if(name==='timeline') loadTimeline();
+  if(name==='sessions') loadSessions();
+  if(name==='status') loadStatus();
+  if(name==='approvals') loadApprovals();
+  if(name==='coverage') loadCoverage();
+}
+async function loadCoverage(){ lastCaps=(await api('/capabilities'))||[]; renderCoverage(); }
+function renderCoverage(){
+  if(!lastCaps) return;
+  document.getElementById('coverageBody').innerHTML=lastCaps.map(c=>{
+    const note=LANG==='en'?(c.note_en||c.note):(c.note||c.note_en);
+    return `<tr><td>${esc(c.display)}</td><td>${esc(tOr('kind.'+c.kind,c.kind))}</td>
+     <td><span class="badge ${interceptBadge[c.intercept]||'r-info'}">${esc(tOr('icpt.'+c.intercept,c.intercept))}</span></td>
+     <td>${c.hooks?'✓':''}</td><td class="reason">${esc(note)}</td></tr>`;}).join('');
+}
+document.getElementById('nav').onclick=e=>{ if(e.target.dataset.tab) tab(e.target.dataset.tab); else if(e.target.parentElement&&e.target.parentElement.dataset.tab) tab(e.target.parentElement.dataset.tab); };
+document.getElementById('riskFilter').onchange=e=>{riskFilter=e.target.value; renderEvents();};
+
+async function loadInfo(){
+  try{lastInfo=await api('/info'); renderInfo();}catch(e){}
+}
+function renderInfo(){
+  const i=lastInfo; if(!i) return;
+  document.getElementById('modePill').textContent=t('pill.mode',{mode:tOr('mode.'+i.mode,i.mode)});
+  document.getElementById('modePill').className='pill '+(i.mode==='active'?'on':'');
+  // GLM is opt-in: while it is off there is nothing to report, so don't show a "disabled" chip.
+  const glmPill=document.getElementById('glmPill');
+  glmPill.hidden=(i.glm==='disabled');
+  glmPill.textContent='GLM '+tOr('glm.'+i.glm,i.glm);
+  document.getElementById('rulesPill').textContent=t('pill.rules',{n:i.rules});
+}
+async function loadApprovals(){ lastApprovals=(await api('/approvals?status=pending'))||[]; renderApprovals(); }
+function renderApprovals(){
+  const list=lastApprovals; if(!list) return;
+  const badge=document.getElementById('apBadge');
+  badge.textContent=list.length?('('+list.length+')'):'';
+  const el=document.getElementById('approvals');
+  if(!list.length){el.innerHTML='<div class="empty">'+esc(t('ap.none'))+'</div>';return;}
+  el.innerHTML=list.map(a=>{
+    let glm=''; try{const g=JSON.parse(a.glm||'null'); if(g)glm=`<div class="reason">${esc(t('ap.glm'))}${esc(g.intent)}（${esc(g.reason)}）</div>`;}catch(e){}
+    const rt=ruleTitle(a.rule);
+    const rule=a.rule?esc(rt||a.rule)+(rt?` <span class="rid">(${esc(a.rule)})</span>`:''):'-';
+    return `<div class="approval">
+      <div><span class="badge r-${esc(a.risk)}">${esc(riskLabel(a.risk))}</span> <b>${esc(a.agent||'?')}</b> · ${esc(t('ap.rule'))} ${rule}${a.rule?'':' · '+esc(a.reason||'')}</div>
+      <div class="cmd mono">${esc(a.summary)}</div>${glm}
+      <div class="actions">
+        <button class="btn" onclick="resolve(${Number(a.id)},'allow_once')">${esc(t('ap.once'))}</button>
+        <button class="btn ghost" onclick="resolve(${Number(a.id)},'allow_session')">${esc(t('ap.session'))}</button>
+        <button class="btn danger" onclick="resolve(${Number(a.id)},'deny')">${esc(t('ap.deny'))}</button>
+      </div></div>`;
+  }).join('');
+}
+async function resolve(id,decision){
+  await fetch('/api/approvals/'+id,{method:'POST',headers:{...H,'Content-Type':'application/json'},body:JSON.stringify({decision})});
+  loadApprovals();
+}
+const evAutoScroll=document.getElementById('evAutoScroll'); let evPending=0;
+try{ const v=localStorage.getItem('xmon.evAutoScroll'); if(v!==null) evAutoScroll.checked=v==='1'; }catch(e){}
+function updateEvPending(){
+  const b=document.getElementById('evNew'); b.hidden=!evPending; b.textContent=t('ev.newPending',{n:evPending});
+}
+evAutoScroll.onchange=()=>{ try{localStorage.setItem('xmon.evAutoScroll',evAutoScroll.checked?'1':'0');}catch(e){} if(evAutoScroll.checked) renderEvents(); };
+document.getElementById('evNew').onclick=()=>renderEvents();
+function renderEvents(){
+  evPending=0; updateEvPending();
+  const order={critical:4,high:3,medium:2,low:1,info:0};
+  const min=order[riskFilter]??-1;
+  const rows=events.filter(e=>(order[e.risk]??0)>=min).slice(0,200).map(e=>{
+    const f=e.fields||{};
+    const detail=e.tool?((e.tool.args&&(e.tool.args.command||e.tool.args.file_path||e.tool.args.url))||''):(f.command||f.path||f.cmdline||f.ip||'');
+    const ttl=eventTitle(e);
+    const rt=ruleTitle(e.rule);
+    const ruleCell=e.rule?(esc(rt||e.rule)+(rt?` <span class="rid">${esc(e.rule)}</span>`:'')):'';
+    return `<tr>
+      <td>${fmtTime(e.ts)}</td><td><span class="layer" title="${esc(e.layer||'')}">${esc(layerLabel(e.layer||''))}</span></td>
+      <td>${esc(e.type)}</td><td>${esc(e.agent||'')}</td>
+      <td class="d-${esc(e.decision||'')}">${esc(e.decision?decLabel(e.decision):'')}</td>
+      <td><span class="badge r-${esc(e.risk)}">${esc(riskLabel(e.risk))}</span></td>
+      <td>${ruleCell}</td><td>${ttl?`<div class="evtitle">${esc(ttl)}</div>`:''}<div class="mono">${esc(String(detail).slice(0,160))}</div></td></tr>`;
+  }).join('');
+  document.getElementById('eventsBody').innerHTML=rows||'<tr><td colspan="8" class="empty">'+esc(t('ev.none'))+'</td></tr>';
+}
+async function loadEvents(){ events=(await api('/events?limit=200'))||[]; renderEvents(); }
+async function loadSessions(){ lastSessions=(await api('/sessions'))||[]; renderSessions(); }
+
+/* ---------- heartbeat (CC-Monitor's "vital sign" indicator, for every agent) ---------- */
+const VITAL_HEART="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z";
+const VITAL_ECG="M0,7 L11,7 L14,1 L18,13 L21,7 L26,7 L29,3 L32,11 L35,7 L40,7", VITAL_FLAT="M0,7 L40,7";
+const VITAL_FADE_MS=3600e3, VITAL_WORKING_MS=5*60e3, VITAL_IDLE_FLOOR=.14;
+function vitalHeat(status,ago){
+  if(status==='dead'||ago==null) return 0;
+  const raw=Math.max(0,1-ago/VITAL_FADE_MS);
+  return status==='idle'?Math.max(raw,VITAL_IDLE_FLOOR):raw;
+}
+function hexRGB(h){ const m=String(h||'').trim().match(/^#?([0-9a-f]{6})$/i); if(!m) return null; const n=parseInt(m[1],16); return [n>>16&255,n>>8&255,n&255]; }
+function vitalColor(heat,status){
+  const cs=getComputedStyle(document.documentElement);
+  // blocked waits on a human, so it takes the "needs attention" colour; the rest fade from the alert colour to muted ink
+  const hot=hexRGB(cs.getPropertyValue(status==='blocked'?'--medium':'--high'))||[239,68,68];
+  const dim=hexRGB(cs.getPropertyValue('--muted'))||[122,128,148];
+  const h=status==='blocked'?1:heat;
+  return 'rgb('+[0,1,2].map(i=>Math.round(dim[i]+(hot[i]-dim[i])*h)).join(',')+')';
+}
+function renderVital(status,ago){
+  const st=status||'idle', heat=st==='blocked'?1:vitalHeat(st,ago);
+  const flat=st==='dead'||ago==null||ago>=VITAL_FADE_MS;
+  const anim=(st==='working'&&ago!=null&&ago<VITAL_WORKING_MS)||st==='blocked';
+  const cls=['vital','vital-'+st,anim?'vital-animated':'',flat&&st!=='blocked'?'vital-flat':''].filter(Boolean).join(' ');
+  return `<span class="${cls}" style="--vital-heat:${heat.toFixed(2)};--vital-color:${vitalColor(heat,st)}" title="${esc(t('ses.stTip.'+st))}">
+    <svg class="vital-heart" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="${VITAL_HEART}"/></svg>
+    <svg class="vital-ecg" viewBox="0 0 40 14" aria-hidden="true"><path d="${flat&&st!=='blocked'?VITAL_FLAT:VITAL_ECG}" fill="none" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg></span>`;
+}
+function fmtAgo(ms){
+  if(ms==null) return t('ses.ago.never');
+  const s=Math.floor(ms/1000);
+  if(s<5) return t('ses.ago.now');
+  if(s<60) return t('ses.ago.s',{n:s});
+  if(s<3600) return t('ses.ago.m',{n:Math.floor(s/60)});
+  if(s<86400) return t('ses.ago.h',{n:Math.floor(s/3600)});
+  return t('ses.ago.d',{n:Math.floor(s/86400)});
+}
+function sessionRowQuery(r){ return 'lane='+encodeURIComponent(r.kind==='process'?'agent:'+r.agent:r.id); }
+function renderSessions(){
+  const list=lastSessions; if(!list) return;
+  const alive=list.filter(r=>r.alive).length;
+  const sum=document.getElementById('sesSummary');
+  sum.innerHTML=['working','idle','blocked','dead'].map(k=>{const n=list.filter(r=>r.status===k).length; return n?`<span class="chip ${k==='working'?'ok':k==='blocked'?'warn':'mute'}"><span aria-hidden="true">${k==='working'?'♥':k==='blocked'?'▲':k==='idle'?'○':'■'}</span>${esc(t('ses.st.'+k))} ${n}</span>`:'';}).join('')+
+    `<span class="reason">${esc(t('ses.sum',{n:alive}))}</span>`;
+  document.getElementById('sessionsBody').innerHTML=list.map((r,i)=>{
+    const where=r.kind==='process'?`<span class="mono">PID ${r.root_pid}</span> ${r.children?`<span class="reason">${esc(t('ses.children',{n:r.children}))}</span>`:''}`:`<span class="mono">${esc(r.cwd||'')}</span>`;
+    return `<tr class="rowclick${r.alive?'':' dead'}" data-i="${i}" title="${esc(t('ses.openEvents'))}">
+      <td><div class="stcell">${renderVital(r.status,r.ago_ms)}<span>${esc(t('ses.st.'+r.status))}</span></div></td>
+      <td><b>${esc(r.agent)}</b></td>
+      <td><span class="chip ${r.kind==='managed'?'ok':r.kind==='process'?'warn':'mute'}">${esc(t('ses.kind.'+r.kind))}</span></td>
+      <td>${where}</td><td>${esc(fmtAgo(r.ago_ms))}</td>
+      <td class="mono">${num(r.events)}${r.blocked?` / ${num(r.blocked)}`:''}</td>
+      <td>${r.started_at?esc(fmtDT(r.started_at)):''}</td></tr>`;
+  }).join('')||'<tr><td colspan="7" class="empty">'+esc(t('ses.none'))+'</td></tr>';
+}
+/* ---------- status page: account quota, model usage, session board ---------- */
+const SCHEMES=['traffic','steps','ocean','sunset','accent','mono'];
+let SCHEME=SCHEMES.includes(lsGet('xmon.scheme'))?lsGet('xmon.scheme'):'traffic', lastUsage=null, lastModels=null;
+const SCHEME_STOPS={
+  ocean:['#7fd6e0','#3aa6c9','#2f6fb5'],sunset:['#ffd27f','#ff9d43','#e8553a'],mono:['#b9bcc6','#8a8f9e','#5b6070']};
+function barColor(pct){
+  if(SCHEME==='accent') return 'var(--accent)';
+  if(SCHEME==='traffic') return pct>=85?'var(--high)':pct>=60?'var(--medium)':'var(--low)';
+  if(SCHEME==='steps'){ const k=Math.min(4,Math.floor(pct/20)); return ['var(--low)','color-mix(in srgb,var(--low) 55%,var(--medium))','var(--medium)','color-mix(in srgb,var(--medium) 55%,var(--high))','var(--high)'][k]; }
+  const st=SCHEME_STOPS[SCHEME]; return st[pct>=85?2:pct>=60?1:0];
+}
+function fmtLeft(iso){
+  if(!iso) return t('stat.unknown');
+  const ms=new Date(iso).getTime()-Date.now(); if(isNaN(ms)) return t('stat.unknown');
+  if(ms<=0) return fmtAgo(-ms);
+  const m=Math.floor(ms/60000), d=Math.floor(m/1440), h=Math.floor(m%1440/60);
+  return t('stat.resetsIn',{d:d?(d+(LANG==='zh'?' 天 ':'d ')+h+(LANG==='zh'?' 小时':'h')):h?(h+(LANG==='zh'?' 小时 ':'h ')+m%60+(LANG==='zh'?' 分':'m')):(m+(LANG==='zh'?' 分钟':'m'))});
+}
+const fmtAbs=(iso)=>{ const d=new Date(iso); return isNaN(d)?'':d.toLocaleString(locale(),{hour12:false,month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}); };
+function quotaRow(label,b){
+  if(!b||b.utilization==null) return '';
+  const pct=Math.max(0,Math.min(100,b.utilization));
+  return `<div class="quota-row"><div><div class="qn">${pct.toFixed(pct<10&&pct%1?1:0)}%</div><div class="qmeta">${esc(label)}</div></div>
+    <div class="qtrack" role="img" aria-label="${esc(label)} ${pct.toFixed(0)}%"><span class="qfill" style="width:${pct}%;background:${barColor(pct)}"></span></div>
+    <div class="qmeta">${esc(t('stat.left'))} ${(100-pct).toFixed(0)}%<br>${esc(fmtLeft(b.resets_at))}${b.resets_at?` · ${esc(fmtAbs(b.resets_at))}`:''}</div></div>`;
+}
+function renderQuota(){
+  const box=document.getElementById('quotaBox'), u=lastUsage; if(!u){ box.innerHTML=''; return; }
+  if(!u.enabled){
+    box.innerHTML=`<div class="notice"><b>${esc(t('stat.off.title'))}</b><p style="margin:6px 0">${esc(t('stat.off.body'))}</p><div class="reason">${esc(t('stat.off.how'))}</div><pre>usage:\n  anthropic_enabled: true</pre></div>`; return;
+  }
+  if(u.error){ box.innerHTML=`<div class="notice">${esc(t('stat.err',{msg:u.error}))}</div>`; return; }
+  const q=u.quota||{}; let h='';
+  const meta=[q.plan?`<span>${esc(t('stat.plan'))} <b>${esc(q.plan)}</b></span>`:'',q.rate_tier?`<span>${esc(t('stat.tier'))} <b>${esc(q.rate_tier)}</b></span>`:'',u.fetched_at?`<span>${esc(t('stat.fetched',{t:fmtTime(u.fetched_at)}))}</span>`:''].join('');
+  if(meta) h+=`<div class="kv">${meta}</div>`;
+  h+=quotaRow(t('stat.q.session'),q.session)+quotaRow(t('stat.q.weekly'),q.weekly)+quotaRow(t('stat.q.weeklySonnet'),q.weekly_sonnet)+quotaRow(t('stat.q.weeklyOpus'),q.weekly_opus);
+  // a model that already has its own bucket (Sonnet / Opus) must not appear twice
+  const shown=(name)=>{ const n=String(name).toLowerCase(); return (n.includes('sonnet')&&q.weekly_sonnet)||(n.includes('opus')&&q.weekly_opus); };
+  const scoped=(q.limits||[]).filter(l=>l.kind==='weekly_scoped'&&l.scope_model&&l.percent!=null&&l.active&&!shown(l.scope_model));
+  scoped.forEach(l=>{ h+=quotaRow(t('stat.q.weeklyModel',{model:l.scope_model}),{utilization:l.percent,resets_at:l.resets_at}); });
+  if((q.limits||[]).length){
+    h+=`<div class="sec" style="margin-top:18px"><span>${esc(t('stat.limits'))}</span></div><table class="plain"><thead><tr><th>${esc(t('stat.col.kind'))}</th><th>${esc(t('stat.col.pct'))}</th><th>${esc(t('stat.col.sev'))}</th><th>${esc(t('stat.col.reset'))}</th><th>${esc(t('stat.col.active'))}</th></tr></thead><tbody>`+
+      q.limits.map(l=>{ const sev=l.severity||'normal', cls=sev==='critical'?'bad':sev==='warning'?'warn':'ok';
+        return `<tr><td>${esc(tOr('stat.kind.'+l.kind,l.kind)+(l.scope_model?' · '+l.scope_model:''))}</td><td class="mono">${l.percent==null?'—':l.percent.toFixed(0)+'%'}</td>
+        <td><span class="chip ${cls}"><span aria-hidden="true">${cls==='bad'?'■':cls==='warn'?'▲':'✓'}</span>${esc(tOr('stat.sev.'+sev,sev))}</span></td><td>${esc(fmtAbs(l.resets_at))}</td><td>${l.active?'✓':''}</td></tr>`;}).join('')+`</tbody></table>`;
+  }
+  if(q.spend){
+    const amt=q.spend.used_minor==null?null:(q.spend.used_minor/Math.pow(10,q.spend.exponent??2)).toFixed(q.spend.exponent??2);
+    h+=`<div class="kv" style="margin-top:14px"><span>${esc(t('stat.spend'))} <b>${q.spend.enabled?esc(t('stat.spendUsed'))+' '+esc(amt==null?'—':amt+' '+(q.spend.currency||'')):esc(t('stat.spendOff'))}</b>${q.spend.percent!=null&&q.spend.enabled?` · ${q.spend.percent.toFixed(0)}%`:''}</span></div>`;
+  }
+  box.innerHTML=h||`<div class="reason">${esc(t('stat.unknown'))}</div>`;
+}
+function renderModels(){
+  const box=document.getElementById('modelBox'), l=lastModels; if(!l) return;
+  if(!l.length){ box.innerHTML=`<div class="reason">${esc(t('stat.m.none'))}</div>`; return; }
+  box.innerHTML=`<table class="plain"><thead><tr><th>${esc(t('stat.m.model'))}</th><th>${esc(t('stat.m.calls'))}</th><th>${esc(t('stat.m.blocked'))}</th><th>${esc(t('stat.m.sessions'))}</th><th>${esc(t('stat.m.agents'))}</th><th>${esc(t('stat.m.last'))}</th></tr></thead><tbody>`+
+    l.map(m=>`<tr><td class="mono">${esc(m.model)}</td><td class="mono">${num(m.calls)}</td><td class="mono">${num(m.blocked)}</td><td class="mono">${num(m.sessions)}</td><td class="mono">${num(m.agents)}</td><td>${esc(fmtAgo(Date.now()-m.last_ts))}</td></tr>`).join('')+`</tbody></table>`;
+}
+function renderBoard(){
+  const box=document.getElementById('boardBox'), l=lastSessions; if(!l) return;
+  if(!l.length){ box.innerHTML=`<div class="reason">${esc(t('stat.b.none'))}</div>`; return; }
+  box.innerHTML=l.map((r,i)=>`<div class="bcard${r.alive?'':' dead'}" data-i="${i}">
+    <div class="bhead">${renderVital(r.status,r.ago_ms)}<b>${esc(r.agent)}</b><span class="chip ${r.kind==='managed'?'ok':r.kind==='process'?'warn':'mute'}">${esc(t('ses.kind.'+r.kind))}</span><span class="grow"></span><span class="qmeta">${esc(t('ses.st.'+r.status))}</span></div>
+    <div class="bcwd">${esc(r.kind==='process'?'PID '+r.root_pid+(r.cmdline?' · '+r.cmdline:''):(r.cwd||r.id))}</div>
+    ${r.branch?`<div class="dmeta"><span class="chip mute"><span aria-hidden="true">⎇</span>${esc(r.branch)}</span></div>`:''}
+    <div class="bstats"><span>${esc(t('stat.b.events'))} <b>${num(r.events)}</b></span><span>${esc(t('stat.b.blocked'))} <b>${num(r.blocked)}</b></span>${r.pending?`<span>${esc(t('stat.b.pending'))} <b>${r.pending}</b></span>`:''}<span>${esc(t('stat.b.last'))} <b>${esc(fmtAgo(r.ago_ms))}</b></span>${r.started_at?`<span>${esc(t('stat.b.started'))} <b>${esc(fmtDT(r.started_at))}</b></span>`:''}</div></div>`).join('');
+}
+function renderStatus(){
+  const sel=document.getElementById('barScheme');
+  sel.innerHTML=SCHEMES.map(k=>`<option value="${k}"${k===SCHEME?' selected':''}>${esc(t('stat.scheme.'+k))}</option>`).join('');
+  renderQuota(); renderModels(); renderBoard();
+}
+async function loadStatus(){
+  const [u,m,s]=await Promise.all([api('/usage').catch(()=>null),api('/model-usage?range='+RANGE).catch(()=>null),api('/sessions').catch(()=>null)]);
+  lastUsage=u; lastModels=m||[]; lastSessions=s||lastSessions; renderStatus();
+}
+document.getElementById('barScheme').onchange=(e)=>{ SCHEME=e.target.value; lsSet('xmon.scheme',SCHEME); renderQuota(); };
+document.getElementById('boardBox').addEventListener('click',(e)=>{
+  const c=e.target.closest('.bcard'); if(!c||!lastSessions) return; const r=lastSessions[Number(c.dataset.i)]; if(!r) return;
+  openModal(r.agent+' · '+(r.kind==='process'?'PID '+r.root_pid:r.id),'…');
+  api('/events?limit=100&'+sessionRowQuery(r)).then(l=>{document.getElementById('modalBody').innerHTML=evList(l);}).catch(()=>{});
+});
+setInterval(()=>{ if(curTab==='status') loadStatus().catch(()=>{}); },5000);
+
+document.getElementById('sessionsBody').addEventListener('click',(e)=>{
+  const tr=e.target.closest('tr[data-i]'); if(!tr||!lastSessions) return;
+  const r=lastSessions[Number(tr.dataset.i)]; if(!r) return;
+  // the drill-down lists events of any age, not just the overview range
+  openModal(r.agent+' · '+(r.kind==='process'?'PID '+r.root_pid:r.id),'…');
+  api('/events?limit=100&'+sessionRowQuery(r)).then(l=>{document.getElementById('modalBody').innerHTML=evList(l);}).catch(()=>{});
+});
+setInterval(()=>{ if(curTab==='sessions') loadSessions().catch(()=>{}); },4000);
+
+/* ---------- overview (modelled on CC-Monitor's home page) ---------- */
+let RANGE='24h', lastOv=null, ovTimer=null;
+const CAT_SEV={destruction:'high',c2:'high',evasion:'high',credentials:'med',exfiltration:'med',injection:'med',persistence:'med',privilege:'low',supply_chain:'low',workspace:'low'};
+const SEV_COLOR={high:'var(--high)',med:'var(--medium)',low:'var(--accent)'};
+const DEC_COLOR={allow:'var(--allow)',block:'var(--block)',confirm:'var(--confirm)',log:'var(--muted)',notify:'var(--muted)'};
+const RISK_COLOR={critical:'var(--critical)',high:'var(--high)',medium:'var(--medium)',low:'var(--low)',info:'var(--info)'};
+const LAYER_COLOR={L1:'var(--cat-1)',L2:'var(--cat-2)',L3:'var(--cat-3)',L4:'var(--cat-4)',hook:'var(--cat-5)'};
+const rangeMs=()=>({'1h':3600e3,'6h':6*3600e3,'24h':86400e3,'7d':7*86400e3})[RANGE]||86400e3;
+const fmtDT=(ms)=>new Date(ms).toLocaleString(locale(),{hour12:false,month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+const fmtHM=(ms)=>new Date(ms).toLocaleString(locale(),RANGE==='7d'||RANGE==='24h'?{hour12:false,month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}:{hour12:false,hour:'2-digit',minute:'2-digit'});
+const num=(n)=>Number(n||0).toLocaleString(locale());
+
+let lastDet=null;
+async function loadOverview(){
+  const [ov,det,ses]=await Promise.all([api('/overview?range='+RANGE), api('/detected').catch(()=>null), api('/sessions').catch(()=>null)]);
+  lastOv=ov; lastDet=det||[]; lastSessions=ses||lastSessions; renderOverview();
+}
+function scheduleOverview(){ if((curTab!=='overview'&&curTab!=='timeline')||ovTimer) return; ovTimer=setTimeout(()=>{ovTimer=null; curTab==='timeline'?loadTimeline():loadOverview();},1500); }
+
+function bars(entries){
+  const list=entries.filter(e=>e.value>0);
+  if(!list.length) return '<div class="reason">'+esc(t('dist.none'))+'</div>';
+  const max=Math.max(...list.map(e=>e.value));
+  return list.map(e=>`<div class="brow${e.q!=null?' click':''}"${e.q!=null?` data-q="${esc(e.q)}" data-title="${esc(e.label)}" data-total="${e.value}"`:''}><span class="bl" title="${esc(e.label)}">${esc(e.label)}</span>
+    <span class="btrack"><span class="bfill" style="display:block;width:${(e.value/max*100).toFixed(1)}%;background:${e.color}"></span></span>
+    <span class="bnum">${num(e.value)}</span></div>`).join('');
+}
+const panel=(title,inner)=>`<div class="panel"><h4>${esc(title)}</h4>${inner}</div>`;
+
+function niceMax(v){ const p=Math.pow(10,Math.floor(Math.log10(Math.max(1,v)))); for(const m of [1,2,5,10]) if(m*p>=v) return m*p; return 10*p; }
+function renderTrend(o){
+  const tl=o.timeline||[]; const box=document.getElementById('trend');
+  if(!tl.length){ box.innerHTML=''; return; }
+  const top=niceMax(Math.max(1,...tl.map(b=>b.total)));
+  const cols=tl.map((b,i)=>{
+    const h=(b.total/top*100).toFixed(2), hb=b.total?(b.blocked/b.total*100).toFixed(2):0;
+    return `<div class="tr-col" data-i="${i}">${b.total?`<div class="tr-bar" style="height:${h}%">${b.blocked?`<i style="height:${hb}%"></i>`:''}</div>`:''}</div>`;
+  }).join('');
+  const mid=tl[Math.floor(tl.length/2)].ts;
+  box.innerHTML=
+    `<div class="tr-plot" role="img" aria-label="${esc(t('ov.sec.trend'))}">
+       <div class="tr-grid" style="top:0"><span>${num(top)}</span></div>
+       <div class="tr-grid" style="top:50%"><span>${num(top/2)}</span></div>
+       <div class="tr-grid" style="top:100%"><span>0</span></div>
+       <div class="tr-cols">${cols}</div></div>
+     <div class="axis"><span>${esc(fmtHM(tl[0].ts))}</span><span>${esc(fmtHM(mid))}</span><span>${esc(fmtHM(tl[tl.length-1].ts))}</span></div>
+     <div class="legend"><span><i class="sw" style="background:color-mix(in srgb,var(--accent) 55%,var(--panel))"></i>${esc(t('trend.legendTotal'))}</span>
+       <span><i class="sw" style="background:var(--block)"></i>${esc(t('trend.legendBlocked'))}</span></div>`;
+  const tip=document.getElementById('tlTooltip');
+  box.querySelectorAll('.tr-col').forEach(c=>{
+    c.onmousemove=(ev)=>{
+      const b=tl[Number(c.dataset.i)]; tip.hidden=false;
+      tip.innerHTML=`<div class="tt-title">${esc(fmtHM(b.ts))}</div>${esc(t('trend.tip',{time:'',n:num(b.total),b:num(b.blocked)}).replace(/^\s*·\s*/,''))}`;
+      tip.style.left=Math.min(ev.clientX+14,innerWidth-tip.offsetWidth-8)+'px'; tip.style.top=(ev.clientY+14)+'px';
+    };
+    c.onmouseleave=()=>{tip.hidden=true;};
+  });
+}
+
+function renderDetected(){
+  const box=document.getElementById('detCards'); if(!box) return;
+  // several processes of one agent (e.g. two claude windows) fold into one card
+  const by={};
+  (lastDet||[]).forEach(d=>{
+    const g=by[d.agent]||(by[d.agent]={...d,pids:[],procs:0,managedAny:false});
+    g.pids.push(d.pid); g.procs+=1+(d.children||0); g.managedAny=g.managedAny||d.managed;
+    if(d.hook_ready) g.hook_ready=true; if(d.hook_seen) g.hook_seen=true;
+  });
+  const list=Object.values(by);
+  if(!list.length){ box.innerHTML=`<div class="reason">${esc(t('det.none'))}</div>`; return; }
+  const chip=(kind,glyph,text)=>`<span class="chip ${kind}"><span aria-hidden="true">${glyph}</span>${esc(text)}</span>`;
+  box.innerHTML=list.map(d=>{
+    const note=LANG==='en'?(d.note_en||d.note):(d.note||d.note_en);
+    // covered by a native hook (proven by an arriving report) instead of the proxy; or installed but not loaded yet
+    const hooked=!d.managedAny&&d.hook_seen, hookPending=!d.managedAny&&d.hook_ready&&!d.hook_seen;
+    const act=(!d.managedAny&&!hooked&&!hookPending&&d.action)?`<div class="dact"><span class="dline">${esc(t('det.action'))}</span><code>${esc(d.action)}</code><button type="button" class="btn ghost" data-copy="${esc(d.action)}">${esc(t('det.copy'))}</button></div>`:'';
+    const hook=d.hook_capable?chip(d.hook_ready?'ok':'mute',d.hook_ready?'✓':'○',t(d.hook_ready?'det.hookOn':'det.hookOff')):'';
+    const ev=d.events?`<button type="button" class="dev" data-agent-ev="${esc(d.agent)}" data-n="${d.events}">${esc(t('det.events',{n:num(d.events)}))}</button>`:esc(t('det.noEvents'));
+    return `<div class="dcard${d.managedAny||hooked?'':' unmanaged'}">
+      <div class="dhead"><b>${esc(d.display||d.agent)}</b>
+        ${d.managedAny?chip('ok','✓',t('det.managed')):hooked?chip('ok','✓',t('det.hooked')):chip('warn','▲',t(hookPending?'det.hookPending':'det.unmanaged'))}
+        <span class="grow"></span><span class="chip mute">${esc(t('det.'+(d.status==='verified'?'verified':'experimental')))}</span></div>
+      <div class="dmeta"><span class="badge ${interceptBadge[d.intercept]||'r-info'}">${esc(tOr('icpt.'+d.intercept,d.intercept))}</span>${hook}</div>
+      <div class="dline">${esc(note||'')}</div>
+      <div class="dline">${esc(d.managedAny?t('det.managedNote'):hooked?t('det.hookedNote'):hookPending?t('det.hookPendingNote'):t('det.unmanagedNote'))}${d.hook_capable&&!d.hook_ready&&!d.managedAny?' '+esc(t('det.hookRestart')):''}</div>
+      ${act}
+      <div class="dline mono">PID ${esc(d.pids.join(', '))} · ${esc(t('det.procs',{n:d.procs}))} · ${ev}</div></div>`;
+  }).join('');
+}
+document.getElementById('detCards').addEventListener('click',(e)=>{
+  const c=e.target.closest('[data-copy]');
+  if(c){
+    const txt=c.dataset.copy, done=()=>{c.textContent=t('det.copied'); setTimeout(()=>{c.textContent=t('det.copy');},1200);};
+    if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done,()=>{}); 
+    return;
+  }
+  const a=e.target.closest('[data-agent-ev]');
+  if(a) openEvents(a.dataset.agentEv,'agent='+encodeURIComponent(a.dataset.agentEv),Number(a.dataset.n)||0);
+});
+
+function renderOverview(){
+  const o=lastOv; if(!o) return;
+  const agentsN=Object.keys(o.by_agent||{}).length;
+  const dot=(cls)=>`<span class="ldot ${cls}"></span>`;
+  const chip=(kind,glyph,text)=>`<span class="chip ${kind}"><span aria-hidden="true">${glyph}</span>${esc(text)}</span>`;
+  const sb=o.sandbox||{};
+  document.getElementById('topCards').innerHTML=[
+    `<div class="card"><div class="n txt">${esc(tOr('ov.mode.'+o.mode,o.mode))}</div><div class="l">${esc(t('ov.top.mode'))}</div></div>`,
+    `<div class="card click" id="cardSessions" role="button" tabindex="0" title="${esc(t('ov.top.sessionsOpen'))}"><div class="n">${num(o.sessions_running)}</div><div class="l">${esc(t('ov.top.sessions'))}${(lastSessions||[]).some(r=>r.status==='working')?`<span class="vital-badge">${renderVital('working',0)}</span>`:''}</div><div class="sub">${esc(t('ov.top.sessionsSub',{n:o.sessions_total,a:agentsN}))}</div></div>`,
+    `<div class="card click" id="cardPending"><div class="n ${o.pending_approvals?'':'dim'}">${num(o.pending_approvals)}</div><div class="l">${esc(t('ov.top.pending'))}</div><div class="sub">${o.pending_approvals?chip('warn','▲',t('st.attention')):''}${esc(t(o.pending_approvals?'ov.top.pendingSub':'ov.top.pendingNone'))}</div></div>`,
+    `<div class="card click" id="cardBlocked"><div class="n ${o.blocked?'':'dim'}">${num(o.blocked)}</div><div class="l">${esc(t('ov.top.blocked'))}</div><div class="sub">${o.blocked?chip('bad','■',t('dec.block')):''}${esc(t('ov.top.blockedSub',{n:o.bypass}))}</div></div>`,
+    `<div class="card"><div class="l" style="margin:0 0 6px">${esc(t('ov.top.layers'))}</div>
+       ${o.glm==='disabled'?'':`<div class="lrow">${dot(o.glm==='ok'?'ok':'bad')}${esc(t('ov.layer.glm'))} · ${esc(tOr('glm.'+o.glm,o.glm))}</div>`}
+       <div class="lrow">${dot(sb.available?'ok':'off')}${esc(t('ov.layer.sandbox'))} · ${esc(sb.tier||'-')} · ${esc(t(sb.available?'ov.avail':'ov.unavail'))}</div>
+       <div class="lrow">${dot(o.kill_after_exec?'ok':'off')}${esc(t('ov.layer.kill'))} · ${esc(t(o.kill_after_exec?'ov.on':'ov.off'))}</div></div>`,
+  ].join('');
+  const cs=document.getElementById('cardSessions');
+  cs.onclick=()=>tab('sessions'); cs.onkeydown=(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); tab('sessions'); } };
+  document.getElementById('cardPending').onclick=()=>tab('approvals');
+  document.getElementById('cardBlocked').onclick=openBlocked;
+
+  document.getElementById('modeBar').innerHTML=
+    `<span style="color:var(--muted)">${esc(t('ov.mode.label'))}</span>
+     <div class="seg">${['active','paused','stopped'].map(m=>`<button type="button" data-mode="${m}" class="${o.mode===m?'on':''}">${esc(t('ov.mode.'+m))}</button>`).join('')}</div>
+     <span class="reason">${esc(t('ov.mode.'+o.mode+'.desc'))}</span>`;
+
+  document.getElementById('secCards').innerHTML=(o.categories||[]).map(c=>{
+    const sev=c.total?CAT_SEV[c.key]:'';
+    const sc=sev==='high'?chip('bad','■',riskLabel('high')):sev==='med'?chip('warn','▲',riskLabel('medium')):'';
+    return `<div class="card click" data-cat="${esc(c.key)}"><div class="n ${c.total?'':'dim'}">${num(c.total)}</div><div class="l">${esc(t('cat.'+c.key))}</div>
+      <div class="sub">${sc}${esc(t('ov.cat.sub',{b:c.blocked,c:c.confirm}))}</div></div>`;
+  }).join('');
+  document.querySelectorAll('#secCards [data-cat]').forEach(el=>el.onclick=()=>openCategory(el.dataset.cat));
+
+  const L=o.by_layer||{}, observe=(L.L1||0)+(L.L2||0)+(L.L3||0);
+  document.getElementById('actCards').innerHTML=[
+    [o.events,'act.events','q',''],
+    [o.tool_calls,'act.calls','q','kind=intent&type=tool_use&no_reused=1'],
+    [o.alerts,'act.alerts','q','kind=alert'],
+    [o.sessions_total,'act.sessions','act','sessions'],
+    [agentsN,'act.agents','act','agents'],
+    [observe,'act.observe','q','layer=L1,L2,L3'],
+  ].map(([n,k,kind,v])=>`<div class="card click" ${kind==='q'?`data-q="${esc(v)}" data-total="${n}"`:`data-act="${v}"`} data-title="${esc(t(k))}"><div class="n">${num(n)}</div><div class="l">${esc(t(k))}</div></div>`).join('');
+
+  const tc=Object.entries(o.by_tool_class||{}).sort((a,b)=>b[1]-a[1]);
+  document.getElementById('toolCards').innerHTML=tc.length?tc.map(([k,n])=>
+    `<div class="card click" data-q="kind=intent&type=tool_use&no_reused=1&tool_class=${encodeURIComponent(k)}" data-total="${n}" data-title="${esc(tOr('tc.'+k,k))}"><div class="n">${num(n)}</div><div class="l">${esc(tOr('tc.'+k,k))}</div></div>`).join(''):'<div class="reason">'+esc(t('dist.none'))+'</div>';
+
+  renderTrend(o);
+  renderDetected();
+
+  const ent=(map,order,labelFn,colors,qf)=>(order||Object.keys(map)).map(k=>({label:labelFn(k),value:map[k]||0,color:colors[k]||'var(--accent)',q:qf(k)}));
+  const rules=(o.by_rule||[]).slice(0,8).map(r=>({label:ruleTitle(r.rule)||r.rule,value:r.total,color:r.blocked?'var(--block)':'var(--accent)',q:'kind=intent&rule='+encodeURIComponent(r.rule)}));
+  const agents=Object.entries(o.by_agent||{}).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([k,v])=>({label:k,value:v,color:'var(--accent)',q:'agent='+encodeURIComponent(k)}));
+  document.getElementById('distPanels').innerHTML=
+    panel(t('dist.layer'),bars(ent(L,['L1','L2','L3','L4','hook'],layerLabel,LAYER_COLOR,k=>'layer='+k)))+
+    panel(t('dist.risk'),bars(ent(o.by_risk||{},['critical','high','medium','low','info'],riskLabel,RISK_COLOR,k=>'risk_eq='+k)))+
+    panel(t('dist.decision'),bars(ent(o.by_decision||{},['allow','block','confirm','log'],decLabel,DEC_COLOR,k=>'kind=intent&decision='+k)))+
+    panel(t('dist.rules'),bars(rules))+panel(t('dist.agents'),bars(agents));
+}
+
+document.getElementById('modeBar').onclick=async(e)=>{
+  const b=e.target.closest('[data-mode]'); if(!b) return;
+  try{
+    const r=await fetch('/api/mode',{method:'POST',headers:{...H,'Content-Type':'application/json'},body:JSON.stringify({mode:b.dataset.mode})});
+    if(!r.ok) throw new Error((await r.text()).trim()||('http '+r.status));
+    await loadInfo(); await loadOverview();
+  }catch(err){ alert(t('ov.mode.failed',{err:err.message})); }
+};
+document.getElementById('rangeSel').onchange=(e)=>{ RANGE=e.target.value; loadOverview(); };
+
+
+/* ---------- drill-down: every number opens the events it counted ---------- */
+const MODAL_LIMIT=100;
+async function openEvents(title,query,total){
+  openModal(title,'…');
+  try{
+    const list=await api('/events?limit='+MODAL_LIMIT+'&since_ms='+(Date.now()-rangeMs())+(query?'&'+query:''));
+    const more=(total&&total>(list||[]).length)?`<div class="reason" style="margin-bottom:8px">${esc(t('modal.shown',{n:num(total),m:(list||[]).length}))}</div>`:'';
+    document.getElementById('modalBody').innerHTML=more+evList(list);
+  }catch(e){ document.getElementById('modalBody').innerHTML='<div class="empty">'+esc(String(e.message||e))+'</div>'; }
+}
+function openAgents(){
+  const rows=Object.entries((lastOv&&lastOv.by_agent)||{}).sort((a,b)=>b[1]-a[1]);
+  openModal(t('act.agents'),rows.length?rows.map(([k,v])=>
+    `<div class="evl click" data-agent="${esc(k)}" data-total="${v}" style="cursor:pointer"><div class="evl-h"><b>${esc(k)}</b><span class="reason">${esc(t('modal.agentEvents',{n:num(v)}))}</span></div></div>`).join(''):'<div class="empty">'+esc(t('modal.empty'))+'</div>');
+}
+document.getElementById('modalBody').addEventListener('click',(e)=>{
+  const r=e.target.closest('[data-agent]'); if(r) openEvents(r.dataset.agent,'agent='+encodeURIComponent(r.dataset.agent),Number(r.dataset.total));
+});
+['actCards','toolCards','distPanels'].forEach(id=>document.getElementById(id).addEventListener('click',(e)=>{
+  const el=e.target.closest('[data-q],[data-act]'); if(!el) return;
+  if(el.dataset.act==='sessions') return tab('sessions');
+  if(el.dataset.act==='agents') return openAgents();
+  openEvents(el.dataset.title||'',el.dataset.q||'',Number(el.dataset.total)||0);
+}));
+
+/* ---------- modal ---------- */
+function openModal(title,html){
+  document.getElementById('modalTitle').textContent=title;
+  document.getElementById('modalBody').innerHTML=html;
+  document.getElementById('modal').hidden=false;
+}
+function closeModal(){ document.getElementById('modal').hidden=true; }
+document.getElementById('modalClose').onclick=closeModal;
+document.getElementById('modal').onclick=(e)=>{ if(e.target.id==='modal') closeModal(); };
+document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') closeModal(); });
+
+function evLine(e){
+  const f=e.fields||{}, a=(e.tool&&e.tool.args)||{};
+  const detail=a.command||a.file_path||a.url||f.command||f.path||f.cmdline||'';
+  const ttl=eventTitle(e), rt=ruleTitle(e.rule)||e.rule||'';
+  return `<div class="evl"><div class="evl-h"><span class="mono">${esc(fmtDT(e.ts))}</span>
+    <span class="badge r-${esc(e.risk)}">${esc(riskLabel(e.risk))}</span>
+    ${e.decision?`<span class="d-${esc(e.decision)}">${esc(decLabel(e.decision))}</span>`:''}
+    ${rt?`<b>${esc(rt)}</b>`:''}<span class="layer">${esc(layerLabel(e.layer||''))}</span>${e.agent?`<span class="reason">${esc(e.agent)}</span>`:''}</div>
+    ${detail?`<div class="mono evl-c">${esc(String(detail).slice(0,400))}</div>`:''}
+    ${ttl&&!rt?`<div class="reason">${esc(ttl)}</div>`:''}</div>`;
+}
+const evList=(list)=>list&&list.length?list.map(evLine).join(''):'<div class="empty">'+esc(t('modal.empty'))+'</div>';
+function openBlocked(){ openModal(t('modal.blocked'),evList(lastOv&&lastOv.recent_blocked)); }
+async function openCategory(key){
+  openModal(t('modal.cat',{name:t('cat.'+key)}),'…');
+  try{
+    const list=await api('/events?category='+encodeURIComponent(key)+'&since_ms='+(Date.now()-rangeMs())+'&limit=100');
+    document.getElementById('modalBody').innerHTML=evList(list);
+  }catch(e){ document.getElementById('modalBody').innerHTML='<div class="empty">'+esc(String(e.message||e))+'</div>'; }
+}
+
+/* ---------- operation timeline (ported from CC-Monitor) ---------- */
+let sessionTimeline=null, flowView=null, lastTL=null, lastFlow=null, TL_RANGE=1440;
+function ensureTimeline(){
+  if(sessionTimeline||!window.XTimeline) return;
+  sessionTimeline=new XTimeline.SessionTimeline(document.getElementById('tlCanvas'),document.getElementById('tlTooltip'));
+  sessionTimeline.t=(k,p)=>t(k,p);
+  sessionTimeline.onLaneClick=(id,range)=>{ document.getElementById('tlTooltip').hidden=true; openFlow(id,range); };
+  sessionTimeline.tooltipHtml=(lane,bucket,bucketMs)=>{
+    const name=lane.label||lane.agent||String(lane.sessionId).slice(0,8);
+    const head=`<div class="tt-title">${esc(name)}</div><div class="reason">${esc(String(lane.sessionId).slice(0,14))}${lane.agent?' · '+esc(lane.agent):''}</div>`;
+    const blocked=(n)=>`<span style="color:var(--block)">${esc(t('tlv.tt.blocked',{n}))}</span>`;
+    if(!bucket) return head+`<div>${esc(t('tlv.tt.total',{n:lane.eventCount}))}${lane.blockedCount?' · '+blocked(lane.blockedCount):''}</div><div class="reason">${esc(t('tlv.tt.click'))}</div>`;
+    const risks=[['high',bucket.nHigh],['medium',bucket.nMedium],['low',bucket.nLow],['info',bucket.nInfo]].filter(x=>x[1]>0)
+      .map(([r,n])=>`<span style="color:${RISK_COLOR[r]}">●</span> ${esc(riskLabel(r))} ${n}`).join('&nbsp;&nbsp;');
+    return head+`<div>${esc(fmtTime(bucket.startMs))} – ${esc(fmtTime(bucket.startMs+bucketMs))}</div>
+      <div>${esc(t('tlv.tt.events',{n:bucket.n}))}${bucket.nBlocked?' · '+blocked(bucket.nBlocked):''}</div><div>${risks}</div>
+      <div class="reason">${esc(t('tlv.tt.click'))}</div>`;
+  };
+  flowView=new XTimeline.FlowView(document.getElementById('flowBox'),{t:(k,p)=>t(k,p)});
+}
+async function loadTimeline(){
+  ensureTimeline(); if(!sessionTimeline) return;
+  lastTL=await api('/timeline?range_minutes='+TL_RANGE); renderTimeline();
+}
+function renderTimeline(){
+  const sw=(c,extra)=>`<span><i class="sw" style="background:${c}${extra||''}"></i>`;
+  document.getElementById('tlLegend').innerHTML=
+    ['high','medium','low','info'].map(r=>sw(RISK_COLOR[r])+esc(riskLabel(r))+'</span>').join('')+
+    `<span><i class="sw" style="background:transparent;border:1.5px solid var(--block)"></i>${esc(t('tlv.legend.blocked'))}</span>`;
+  if(!sessionTimeline||!lastTL) return;
+  (lastTL.lanes||[]).forEach(l=>{ if(l.sessionId==='unattributed') l.label=t('tlv.unattributed'); });
+  const empty=!(lastTL.lanes&&lastTL.lanes.length);
+  document.getElementById('tlWrap').hidden=empty;
+  document.getElementById('tlEmpty').hidden=!empty;
+  document.getElementById('tlAxis').textContent=t('tlv.axis',{m:Math.round(lastTL.bucketMs/60000)});
+  if(!empty) sessionTimeline.setData(lastTL);
+}
+function localizeFlow(f){
+  if(!f) return f;
+  const c=JSON.parse(JSON.stringify(f));
+  (c.turns||[]).forEach(tn=>(tn.nodes||[]).forEach(n=>{
+    if(n.type==='op'){ n.title=ruleTitle(n.rule)||''; }   // the server's title is the rule title in Chinese; use the active language
+    else{ const ti=eventTitle({type:n.tool,title:n.title,fields:{}}); if(ti) n.title=ti; }
+    if(n.summary===n.title) n.summary='';
+  }));
+  return c;
+}
+async function openFlow(id,range){
+  ensureTimeline(); if(!flowView) return;
+  document.getElementById('flowSection').hidden=false;
+  document.getElementById('flowPick').hidden=true;
+  try{
+    lastFlow=await api('/session-flow?session_id='+encodeURIComponent(id));
+    flowView.setData(localizeFlow(lastFlow));
+    flowView.highlightRange(range?range.startMs:null, range?range.endMs:null);
+    document.getElementById('flowSection').scrollIntoView({behavior:'smooth',block:'nearest'});
+  }catch(e){ alert(t('flow.failed',{err:e.message||e})); }
+}
+document.getElementById('tlRange').onchange=(e)=>{ TL_RANGE=parseInt(e.target.value,10); loadTimeline(); };
+
+function renderAll(){ renderInfo(); renderOverview(); renderTimeline(); renderStatus(); if(lastFlow&&flowView) flowView.setData(localizeFlow(lastFlow)); renderApprovals(); renderEvents(); renderSessions(); renderCoverage(); }
+
+function connectWS(){
+  const proto=location.protocol==='https:'?'wss':'ws';
+  const ws=new WebSocket(`${proto}://${location.host}/ws${TOKEN?'?token='+TOKEN:''}`);
+  ws.onmessage=ev=>{
+    const m=JSON.parse(ev.data);
+    if(m.t==='event'){
+      events.unshift(m.d); if(events.length>500)events.pop(); scheduleOverview();
+      // auto-scroll on: show the newest at once and keep the view at the top; off: freeze the list so reading is not interrupted
+      if(evAutoScroll.checked){ renderEvents(); if(curTab==='events') window.scrollTo({top:0}); }
+      else { evPending++; updateEvPending(); }
+    }
+    if(m.t==='approvals'){ loadApprovals(); }
+  };
+  ws.onclose=()=>{ if(!UNAUTH) setTimeout(connectWS,2000); };
+}
+applyStatic(); window.__booted=true;
+loadRules(); loadInfo(); loadOverview(); loadEvents(); loadApprovals(); connectWS();
+document.getElementById('tokenBtn').onclick=()=>{
+  const v=document.getElementById('tokenInput').value.trim(); if(!v) return;
+  if(store.set('xmon_token',v)) location.reload(); else location.search='?token='+encodeURIComponent(v);
+};
+setInterval(()=>{loadInfo(); if(curTab==='overview') loadOverview(); if(curTab==='timeline') loadTimeline();},10000);
+</script>
+</body>
+</html>

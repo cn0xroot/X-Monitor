@@ -1,0 +1,49 @@
+#!/usr/bin/env bpftrace
+// X-Monitor L1 probe (Linux/eBPF via bpftrace).
+// Tracks execve/connect across the process tree of recognized AI agents, for
+// cross-verification of the application layer (DESIGN.md §13). Adapted from
+// cc-monitor's probe_linux.bt (MIT License; see NOTICE).
+BEGIN { printf("READY\n"); }
+
+tracepoint:sched:sched_process_fork
+/@watch[args.parent_pid]/
+{
+    @watch[args.child_pid] = 1;
+}
+
+tracepoint:syscalls:sys_enter_execve
+{
+    if (comm == "claude" || comm == "codex" || comm == "cursor-agent" ||
+        comm == "gemini" || comm == "aider" || comm == "codegeex" ||
+        comm == "glm-cli" || comm == "grok" || comm == "opencode") {
+        @watch[pid] = 1;
+    }
+    if (@watch[pid]) {
+        printf("EXEC\t%d\t%d\t%s\t", pid, curtask->real_parent->tgid, comm);
+        join(args.argv);
+    }
+}
+
+uprobe:libc:getaddrinfo
+/@watch[pid]/
+{
+    @dns[pid] = str(arg0);
+}
+
+tracepoint:syscalls:sys_enter_connect
+/@watch[pid]/
+{
+    $sa = (struct sockaddr *) args.uservaddr;
+    if ($sa->sa_family == 2) {
+        $sin = (struct sockaddr_in *) $sa;
+        $port = ($sin->sin_port >> 8) | (($sin->sin_port << 8) & 0xff00);
+        printf("CONNECT\t%d\t%s\t%s\t%d\t%s\n", pid, comm, ntop($sin->sin_addr.s_addr), $port, @dns[pid]);
+    }
+}
+
+tracepoint:sched:sched_process_exit
+/@watch[pid]/
+{
+    delete(@watch[pid]);
+    delete(@dns[pid]);
+}

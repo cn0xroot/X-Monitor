@@ -1,0 +1,45 @@
+# X-Monitor configuration sample.
+# Copy to ~/.xmon/config.yaml (or $XMON_HOME/config.yaml).
+
+mode: active                       # active | paused | stopped
+ui_addr: 127.0.0.1:7788            # dashboard; non-loopback requires a token
+proxy_addr: 127.0.0.1:7789         # LLM API proxy
+
+proxy:
+  fail_open: false                 # NOT IMPLEMENTED yet: no code reads this setting
+  dlp_action: alert                # alert | redact  (secrets about to reach the model)
+  confirm_ping_s: 10               # NOT IMPLEMENTED yet: no code reads this setting
+  routes:                          # override upstream base URLs per provider
+    # anthropic: https://api.anthropic.com
+    # zai-gemini: https://api.z.ai/api/geminiv1beta   # Z.ai CLI = Gemini CLI
+
+glm:                               # semantic audit engine (opt-in)
+  enabled: false
+  endpoint: https://api.z.ai/api/paas/v4
+  model: glm-4.5
+  api_key_env: ZAI_API_KEY
+  timeout_ms: 3000
+  redact: true                     # strip secrets before sending to the model
+  disable_thinking: true
+  min_confidence: 0.85
+  review_unmatched: false
+
+approval:
+  timeout_s: 90                    # unanswered confirmations deny after this
+  desktop_notify: true
+
+storage:
+  retention_days: 30
+  max_events: 1000000
+
+probe:
+  enabled: auto                    # auto | off  (L1 kernel probe; needs root)
+  enforce: false                   # kill-after-exec: terminate programs forbidden by
+                                   # ~/.xmon/enforce-policy.json inside managed agent trees
+                                   # (needs the L1 probe running; has a millisecond window)
+
+usage:
+  anthropic_enabled: false         # opt-in: read Claude Code's local OAuth token and ask
+                                   # api.anthropic.com for the plan quota (Status page).
+                                   # Unofficial endpoint; the token never leaves memory and
+                                   # is sent only to Anthropic. Restart xmond after changing.
