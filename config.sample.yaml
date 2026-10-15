@@ -39,7 +39,7 @@ probe:
                                    # (needs the L1 probe running; has a millisecond window)
 
 usage:
-  anthropic_enabled: false         # opt-in: read Claude Code's local OAuth token and ask
+  anthropic_enabled: true          # on by default (false turns it off): read Claude Code's local OAuth token and ask
                                    # api.anthropic.com for the plan quota (Status page).
                                    # Unofficial endpoint; the token never leaves memory and
                                    # is sent only to Anthropic. Restart xmond after changing.

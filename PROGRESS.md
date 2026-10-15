@@ -91,7 +91,7 @@
 | 审批台(`internal/approval`) | 🔶 | 通道:Web、CLI、桌面通知;**缺口:代理等待审批期间不发保活**(见下) |
 | Web UI(`web/`) | ✅ | 单文件仪表盘 + WebSocket;总览(参照 CC-Monitor 首页:状态卡、介入级别、10 类威胁、活动、趋势、分布,**每个数字可点开看明细**,有 Go 一致性测试保证)、操作时间线与会话流程图(移植 CC-Monitor)、**会话列表 + 心跳**、**检测到的 AI**、10 套主题(默认"标准配色",移植 CC-Monitor)、中英双语(309 词条对齐)、外观设置弹窗(主题色块 / 7 种界面字体 / 12–18px 字号,仅用系统字体名,不下载任何字体)、事件页"自动滚动到最新"开关。已在真实 Chrome 里驱动验证 |
 | 多 AI 检测与 OpenCode Hook | 🔶 | `internal/agents` 收录 CC-Monitor 的 10 个 Agent 定义 + OpenCode;L3 首轮扫描也上报已在运行的 Agent;`/api/detected`、`xmon doctor` 列出并给出下一步命令;`xmon install --agent opencode` 写入插件(幂等)。**已用 node 驱动真实插件对运行中的守护进程验证阻断/放行/入库;未在真实 OpenCode 里重启加载过** |
-| 状态页(账号额度 / 模型统计 / 会话板) | 🔶 | 模型统计:代理把请求模型记入审计事件(Gemini 从路径取),按模型聚合工具调用数,**不统计 token**;会话板含 Git 分支;账号额度见 `internal/usage`——**默认关闭**,读取本机 Claude Code OAuth 令牌查询非公开接口,端点写死不可配置,令牌不落盘不进日志。**客户端只用本地假服务器测过,未对真实接口跑过** |
+| 状态页(账号额度 / 模型统计 / 会话板) | 🔶 | 模型统计:代理把请求模型记入审计事件(Gemini 从路径取),按模型聚合工具调用数,**不统计 token**;会话板含 Git 分支;账号额度见 `internal/usage`——**默认开启**(`usage.anthropic_enabled: false` 关闭),读取本机 Claude Code OAuth 令牌查询非公开接口,端点写死不可配置,令牌不落盘不进日志。**客户端只用本地假服务器测过,未对真实接口跑过** |
 | 会话列表与心跳(`internal/sessionview`) | 🔶 | 覆盖**所有** AI:`xmon run` 受管会话、主机上未受管进程、原生 Hook 上报会话、CC-Monitor 导入历史;工作中(5 分钟内有活动)/空闲/待审批/已结束四态。**局限:仅 Hook 上报的会话没有进程号可查,存活判断是启发式(该 Agent 有进程在跑,或 5 分钟内有活动)** |
 | CLI(`xmon`) | ✅ | start/stop/status/run/install/tail/rules/approve/pending/mode/verify/import/policy/doctor |
 | CC-Monitor 只读导入(`xmon import`) | ✅ | 去重、哈希链并入、端到端验证 |

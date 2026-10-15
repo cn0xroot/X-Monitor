@@ -81,7 +81,7 @@ func (d *daemon) setMode(m config.Mode) {
 	if d.selfWrite != nil {
 		d.selfWrite(config.ConfigPath())
 	}
-	_ = d.cfg.Save()
+	_ = config.SaveMode(m)
 	d.mu.Unlock()
 }
 

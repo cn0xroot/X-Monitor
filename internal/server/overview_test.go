@@ -383,9 +383,13 @@ func TestUsageEndpointIsOptIn(t *testing.T) {
 	ts := httptest.NewServer(srv.Handler(nil))
 	defer ts.Close()
 
+	if !cfg.Usage.AnthropicEnabled {
+		t.Fatal("quota lookup should be on by default")
+	}
+	cfg.Usage.AnthropicEnabled = false
 	var r usage.Result
 	if get(t, ts, "/api/usage", &r); r.Enabled || r.Quota != nil || fq.calls != 0 {
-		t.Fatalf("off by default: nothing may be read or fetched: %+v calls=%d", r, fq.calls)
+		t.Fatalf("disabled: nothing may be read or fetched: %+v calls=%d", r, fq.calls)
 	}
 	cfg.Usage.AnthropicEnabled = true
 	if get(t, ts, "/api/usage", &r); !r.Enabled || r.Quota == nil || *r.Quota.Session.Utilization != 42 || fq.calls != 1 {

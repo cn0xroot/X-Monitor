@@ -55,6 +55,8 @@
   nav button{background:transparent;border:1px solid transparent;color:var(--muted);padding:6px 12px;border-radius:8px;cursor:pointer;font-size:0.9286rem}
   nav button.active{background:var(--panel2);color:var(--fg);border-color:var(--border)}
   main{padding:20px;max-width:1200px;margin:0 auto}
+  /* events filter bar stays under the sticky header while the list scrolls; --hdr-h is measured in JS because the header wraps */
+  .evbar{position:sticky;top:var(--hdr-h,57px);z-index:9;background:var(--bg);padding:8px 0;margin:-8px 0 4px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
   .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px}
   .card .n{font-size:2rem;font-weight:700}
@@ -283,7 +285,7 @@
   </section>
 
   <section id="tab-events" hidden>
-    <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center">
+    <div class="evbar">
       <label><span data-i18n="ev.riskge">风险≥</span> <select id="riskFilter">
         <option value="" data-i18n="ev.all">全部</option><option value="low" data-risk="low">low</option>
         <option value="medium" data-risk="medium">medium</option><option value="high" data-risk="high">high</option>
@@ -508,8 +510,8 @@ zh:{
  'stat.sec.quota':'账号额度','stat.quotaNote':'Anthropic 套餐的 5 小时 / 每周额度，来自本机 Claude Code 登录凭证',
  'stat.schemeTitle':'额度进度条的配色方案，只改本浏览器的显示',
  'stat.scheme.traffic':'配色：红黄绿三档','stat.scheme.steps':'配色：分段色阶','stat.scheme.ocean':'配色：蓝青','stat.scheme.sunset':'配色：日落暖','stat.scheme.accent':'配色：主题强调色','stat.scheme.mono':'配色：灰度',
- 'stat.off.title':'额度查询默认关闭','stat.off.body':'开启后，守护进程会读取本机 Claude Code 的 OAuth 登录令牌，向 api.anthropic.com 查询套餐额度（与 CC-Monitor、ccstatusline 做法相同）。令牌只在内存里用于这一次请求，只发给 Anthropic，不写盘、不记日志。注意：这是逆向得到的非公开接口，可能随时变化；用订阅令牌给第三方工具查询也可能不符合服务条款。macOS 第一次读取钥匙串时系统会弹确认框。',
- 'stat.off.how':'要开启，在 ~/.xmon/config.yaml 里加入下面几行，然后重启 xmond（xmon stop && xmon start）：',
+ 'stat.off.title':'额度查询已关闭','stat.off.body':'开启时，守护进程会读取本机 Claude Code 的 OAuth 登录令牌，向 api.anthropic.com 查询套餐额度（与 CC-Monitor、ccstatusline 做法相同）。令牌只在内存里用于这一次请求，只发给 Anthropic，不写盘、不记日志。注意：这是逆向得到的非公开接口，可能随时变化；用订阅令牌给第三方工具查询也可能不符合服务条款。macOS 第一次读取钥匙串时系统会弹确认框。',
+ 'stat.off.how':'额度查询默认开启，这里关闭是因为 ~/.xmon/config.yaml 里设了 anthropic_enabled: false。要重新开启，把它改成下面这样（或删掉这一项），然后重启 xmond（xmon stop && xmon start）：',
  'stat.err':'额度查询失败：{msg}','stat.fetched':'更新于 {t}（缓存 3 分钟）','stat.plan':'套餐','stat.tier':'额度档位',
  'stat.q.session':'单次额度（5 小时窗口）','stat.q.weekly':'周额度（全部模型）','stat.q.weeklySonnet':'周额度（Sonnet）','stat.q.weeklyOpus':'周额度（Opus）','stat.q.weeklyModel':'周额度（{model}）',
  'stat.used':'已用','stat.left':'剩余','stat.resets':'重置','stat.resetsIn':'{d} 后重置','stat.unknown':'未知',
@@ -674,8 +676,8 @@ en:{
  'stat.sec.quota':'Account quota','stat.quotaNote':'Anthropic plan: 5-hour and weekly allowance, read through the local Claude Code login',
  'stat.schemeTitle':'Colour scheme of the quota bars; only changes this browser',
  'stat.scheme.traffic':'Colours: traffic light','stat.scheme.steps':'Colours: stepped','stat.scheme.ocean':'Colours: blue-teal','stat.scheme.sunset':'Colours: sunset','stat.scheme.accent':'Colours: theme accent','stat.scheme.mono':'Colours: greyscale',
- 'stat.off.title':'Quota lookup is off by default','stat.off.body':'When on, the daemon reads the OAuth login token Claude Code keeps on this machine and asks api.anthropic.com for the plan quota (the same approach as CC-Monitor and ccstatusline). The token is used in memory for that one request, sent only to Anthropic, and never written to disk or logged. Note: this is a reverse-engineered, non-public endpoint that can change at any time, and using a subscription token from a third-party tool may be against the provider\'s terms. On macOS the system asks for confirmation the first time the keychain is read.',
- 'stat.off.how':'To turn it on, add these lines to ~/.xmon/config.yaml and restart xmond (xmon stop && xmon start):',
+ 'stat.off.title':'Quota lookup is turned off','stat.off.body':'When on, the daemon reads the OAuth login token Claude Code keeps on this machine and asks api.anthropic.com for the plan quota (the same approach as CC-Monitor and ccstatusline). The token is used in memory for that one request, sent only to Anthropic, and never written to disk or logged. Note: this is a reverse-engineered, non-public endpoint that can change at any time, and using a subscription token from a third-party tool may be against the provider\'s terms. On macOS the system asks for confirmation the first time the keychain is read.',
+ 'stat.off.how':'Quota lookup is on by default; it is off here because ~/.xmon/config.yaml sets anthropic_enabled: false. To turn it back on, change it as below (or remove the setting) and restart xmond (xmon stop && xmon start):',
  'stat.err':'Quota lookup failed: {msg}','stat.fetched':'Updated {t} (cached for 3 minutes)','stat.plan':'Plan','stat.tier':'Rate tier',
  'stat.q.session':'Session (5-hour window)','stat.q.weekly':'Weekly (all models)','stat.q.weeklySonnet':'Weekly (Sonnet)','stat.q.weeklyOpus':'Weekly (Opus)','stat.q.weeklyModel':'Weekly ({model})',
  'stat.used':'Used','stat.left':'Left','stat.resets':'Resets','stat.resetsIn':'resets in {d}','stat.unknown':'unknown',
@@ -918,6 +920,8 @@ async function resolve(id,decision){
   await fetch('/api/approvals/'+id,{method:'POST',headers:{...H,'Content-Type':'application/json'},body:JSON.stringify({decision})});
   loadApprovals();
 }
+{ const hdr=document.querySelector('header'), setH=()=>document.documentElement.style.setProperty('--hdr-h',hdr.offsetHeight+'px');
+  setH(); if(window.ResizeObserver) new ResizeObserver(setH).observe(hdr); else addEventListener('resize',setH); }
 const evAutoScroll=document.getElementById('evAutoScroll'); let evPending=0;
 try{ const v=localStorage.getItem('xmon.evAutoScroll'); if(v!==null) evAutoScroll.checked=v==='1'; }catch(e){}
 function updateEvPending(){

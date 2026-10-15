@@ -125,17 +125,17 @@ Open it with `xmon ui --open`. After the first visit with the token, the token i
 
 Three blocks:
 
-1. **Account quota**: the Anthropic plan's 5-hour window and weekly allowance (including per-model limits and extra spend). The bar colour scheme is selectable. **Off by default**, for the reasons below.
+1. **Account quota**: the Anthropic plan's 5-hour window and weekly allowance (including per-model limits and extra spend). The bar colour scheme is selectable. **On by default**; see the risks below.
 2. **Model usage**: audited tool calls per model, with blocked counts, sessions and agents. **Tokens are not counted** — the proxy rewrites tool calls, it does not meter usage. The model is only recorded for requests that go through the proxy (`xmon run`); hook reports do not carry it.
 3. **Session status**: one card per AI: heartbeat, directory, Git branch, events and blocks, last activity; click for its events.
 
-### Turning on account quota (optional — read the risks first)
+### Account quota (on by default — read the risks first)
 
-Add to `~/.xmon/config.yaml`:
+To turn it off, add to `~/.xmon/config.yaml`:
 
 ```yaml
 usage:
-  anthropic_enabled: true
+  anthropic_enabled: false
 ```
 
 then `xmon stop && xmon start`. With it on, the daemon reads the OAuth login token Claude Code keeps on this machine (Linux/other: `~/.claude/.credentials.json`; macOS also reads the keychain item `Claude Code-credentials`, and the system asks for confirmation the first time) and makes one read-only request to `api.anthropic.com/api/oauth/usage`; the result is cached for 3 minutes.
@@ -198,7 +198,7 @@ File: `~/.xmon/config.yaml`; see [config.sample.yaml](./config.sample.yaml). Res
 | `approval.desktop_notify` | `true` | Desktop notifications |
 | `storage.retention_days` / `max_events` | `30` / `1000000` | Retention and cap |
 | `probe.enabled` / `probe.enforce` | `auto` / `false` | L1 probe and kill-after-exec |
-| `usage.anthropic_enabled` | `false` | Account quota on the Status page, see section 7 |
+| `usage.anthropic_enabled` | `true` | Account quota on the Status page, see section 7 |
 
 Environment variables: `XMON_HOME` (data directory), `XMON_STRICT=1` (`xmon-hook` **denies** instead of allowing when it cannot reach the daemon), `XMON_HOOK` (overrides the `xmon-hook` path in the OpenCode plugin), `XMON_SESSION` / `XMON_AGENT` (injected by `xmon run`).
 
@@ -206,7 +206,7 @@ Environment variables: `XMON_HOME` (data directory), `XMON_STRICT=1` (`xmon-hook
 
 Under `~/.xmon/`: `events.db` (the audit database, hash-chained), `config.yaml`, `token`, `rules.json`, `xmond.log`, `enforce-policy.json`, `tracked-roots.json`, and the local sockets `xmond.sock` / `hook.sock`.
 
-- Data stays on this machine; with GLM and account quota off there are no outbound requests (the proxy forwarding an agent's own LLM traffic does not count).
+- Data stays on this machine; with GLM off and account quota turned off (it is on by default) there are no outbound requests (the proxy forwarding an agent's own LLM traffic does not count).
 - The dashboard binds to `127.0.0.1` only, and every API and WebSocket needs the token.
 - The monitor protects its own config and data: an agent writing or deleting under `~/.xmon` is blocked outright by the `xmon_self_*` rules.
 

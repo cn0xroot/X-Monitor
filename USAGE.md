@@ -125,20 +125,20 @@ xmon verify                   # 校验审计哈希链(防篡改)
 
 状态页有三块:
 
-1. **账号额度**:Anthropic 套餐的 5 小时窗口和每周额度(含按模型的限额、额外花费)。进度条配色方案可选。**默认关闭**,原因见下。
+1. **账号额度**:Anthropic 套餐的 5 小时窗口和每周额度(含按模型的限额、额外花费)。进度条配色方案可选。**默认开启**,风险见下。
 2. **模型使用统计**:按模型汇总被审计的工具调用次数、拦截数、涉及会话和 Agent。**不统计 token**——代理只改写工具调用,不计量用量。模型只在经代理(`xmon run`)的请求里才会记录,Hook 上报没有这个信息。
 3. **会话状态**:每个 AI 一张卡:心跳、目录、Git 分支、事件与拦截数、最后活动;点击看事件。
 
-### 开启账号额度(可选,请先读风险)
+### 账号额度(默认开启,请先读风险)
 
-在 `~/.xmon/config.yaml` 加:
+不想要时,在 `~/.xmon/config.yaml` 加:
 
 ```yaml
 usage:
-  anthropic_enabled: true
+  anthropic_enabled: false
 ```
 
-然后 `xmon stop && xmon start`。开启后守护进程会读取本机 Claude Code 的 OAuth 登录令牌(Linux/其它:`~/.claude/.credentials.json`;macOS 另读钥匙串项 `Claude Code-credentials`,第一次会弹系统确认框),向 `api.anthropic.com/api/oauth/usage` 发一次只读请求,结果缓存 3 分钟。
+然后 `xmon stop && xmon start`。开启时守护进程会读取本机 Claude Code 的 OAuth 登录令牌(Linux/其它:`~/.claude/.credentials.json`;macOS 另读钥匙串项 `Claude Code-credentials`,第一次会弹系统确认框),向 `api.anthropic.com/api/oauth/usage` 发一次只读请求,结果缓存 3 分钟。
 
 - 令牌只在内存里用于这一次请求,只发给 Anthropic 的这个固定地址(**地址不可配置**,改配置文件无法把令牌送到别处),不写盘、不进日志、不会出现在任何接口返回里。
 - 这是 CC-Monitor 和 ccstatusline 用的**非公开、逆向得到**的接口,可能随时变化;用订阅令牌给第三方工具查询**也可能不符合服务条款**,是否开启请自己判断。
@@ -198,7 +198,7 @@ L1 系统层采集(bpftrace / eslogger+nettop / Sysmon)由 `probe.enabled`(`auto
 | `approval.desktop_notify` | `true` | 桌面通知 |
 | `storage.retention_days` / `max_events` | `30` / `1000000` | 保留期与上限 |
 | `probe.enabled` / `probe.enforce` | `auto` / `false` | L1 探针与 exec 后即杀 |
-| `usage.anthropic_enabled` | `false` | 状态页账号额度,见第 7 节 |
+| `usage.anthropic_enabled` | `true` | 状态页账号额度,见第 7 节 |
 
 环境变量:`XMON_HOME`(数据目录)、`XMON_STRICT=1`(`xmon-hook` 连不上守护进程时**拒绝**而不是放行)、`XMON_HOOK`(覆盖 OpenCode 插件里 `xmon-hook` 的路径)、`XMON_SESSION` / `XMON_AGENT`(`xmon run` 注入)。
 
@@ -206,7 +206,7 @@ L1 系统层采集(bpftrace / eslogger+nettop / Sysmon)由 `probe.enabled`(`auto
 
 `~/.xmon/` 下:`events.db`(审计库,哈希链)、`config.yaml`、`token`、`rules.json`、`xmond.log`、`enforce-policy.json`、`tracked-roots.json`,以及 `xmond.sock` / `hook.sock`(本地套接字)。
 
-- 数据只留本机;不开 GLM 与账号额度就不会有任何出站请求(代理转发 Agent 自己的 LLM 流量不算)。
+- 数据只留本机;不开 GLM、并关闭账号额度(默认开启)就不会有任何出站请求(代理转发 Agent 自己的 LLM 流量不算)。
 - 仪表盘只绑定 `127.0.0.1`,所有接口和 WebSocket 都要令牌。
 - 监控自己的配置与数据受保护:Agent 写/删 `~/.xmon` 会被 `xmon_self_*` 规则直接拦截。
 

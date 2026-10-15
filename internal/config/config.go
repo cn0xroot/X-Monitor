@@ -60,7 +60,8 @@ type Config struct {
 	} `yaml:"probe"`
 	Usage struct {
 		// AnthropicEnabled lets the daemon read Claude Code's local OAuth token and ask
-		// Anthropic how much of the plan quota is used (see internal/usage). Off by default.
+		// Anthropic how much of the plan quota is used (see internal/usage). On by default;
+		// set it to false to make no such request.
 		AnthropicEnabled bool `yaml:"anthropic_enabled"`
 	} `yaml:"usage"`
 }
@@ -101,6 +102,7 @@ func Default() *Config {
 	c.Storage.RetentionDays = 30
 	c.Storage.MaxEvents = 1_000_000
 	c.Probe.Enabled = "auto"
+	c.Usage.AnthropicEnabled = true
 	return c
 }
 
@@ -153,13 +155,46 @@ func Load() (*Config, error) {
 	return c, nil
 }
 
-// Save writes the configuration.
-func (c *Config) Save() error {
-	b, err := yaml.Marshal(c)
+// SaveMode records the mode in config.yaml and leaves every other key as the
+// user wrote it (comments included). Writing the whole struct instead would
+// freeze every built-in default into the file, so a later change of default
+// (e.g. usage.anthropic_enabled) would never reach that user.
+func SaveMode(m Mode) error {
+	b, err := os.ReadFile(ConfigPath())
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	var doc yaml.Node
+	if len(strings.TrimSpace(string(b))) > 0 {
+		if err := yaml.Unmarshal(b, &doc); err != nil {
+			return err
+		}
+	}
+	if len(doc.Content) == 0 {
+		doc = yaml.Node{Kind: yaml.DocumentNode, Content: []*yaml.Node{{Kind: yaml.MappingNode, Tag: "!!map"}}}
+	}
+	root := doc.Content[0]
+	if root.Kind != yaml.MappingNode {
+		return errors.New("config.yaml: top level is not a mapping")
+	}
+	set := false
+	for i := 0; i+1 < len(root.Content); i += 2 {
+		if root.Content[i].Value == "mode" {
+			root.Content[i+1].SetString(string(m))
+			set = true
+		}
+	}
+	if !set {
+		k, v := &yaml.Node{}, &yaml.Node{}
+		k.SetString("mode")
+		v.SetString(string(m))
+		root.Content = append([]*yaml.Node{k, v}, root.Content...)
+	}
+	out, err := yaml.Marshal(&doc)
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(ConfigPath(), b, 0o600)
+	return os.WriteFile(ConfigPath(), out, 0o600)
 }
 
 // Route returns the upstream base URL for provider.

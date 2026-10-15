@@ -1,7 +1,7 @@
 // Package usage reads an AI account's plan quota.
 //
-// Anthropic is the only provider implemented, and it is opt-in
-// (usage.anthropic_enabled in config.yaml; off by default). It does what
+// Anthropic is the only provider implemented, and it is on by default
+// (usage.anthropic_enabled: false in config.yaml turns it off). It does what
 // CC-Monitor and ccstatusline do: take the OAuth token Claude Code keeps on this
 // machine and ask api.anthropic.com/api/oauth/usage how much of the 5-hour and
 // weekly allowance is used. That endpoint is not a documented public API: it is
